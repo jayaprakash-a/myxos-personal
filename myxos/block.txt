@@ -1,0 +1,684 @@
+file (executabl
+e/data file) an
+d clears the bl
+ocks correspond
+ing to the file
+. In the case o
+f OS startup co
+de, interrupt r
+outines and exc
+eption handler 
+the correspondi
+ng blocks in th
+e disk are clea
+red.
+
+
+
+    Syntax: rm 
+--exec <xfs_fil
+ename>
+
+         Remove
+s an executable
+ file from XFS 
+disk
+
+
+
+    Syntax: rm 
+--init
+
+         Remove
+s INIT code fro
+m XFS disk
+
+
+
+    Syntax: rm 
+--data <xfs_fil
+ename>
+
+         Remove
+s a data file f
+rom XFS disk
+
+
+
+    Syntax: rm 
+--os
+
+         Remove
+s OS startup co
+de from XFS dis
+k
+
+
+
+    Syntax: rm 
+--int=timer
+
+         Remove
+s the Timer Int
+errupt routine 
+from XFS disk
+
+
+
+    Syntax: rm 
+--int=[1-7]
+
+         Remove
+s the specified
+ Interrupt rout
+ine from XFS di
+sk
+
+
+
+    Syntax: rm 
+--exhandler
+
+         Remove
+s the exception
+ handler routin
+e from XFS disk
+
+
+
+
+List Files
+
+
+
+The command ls 
+lists all the f
+iles which are 
+loaded into the
+ filesystem. Th
+e size of the f
+ile is also dis
+played in numbe
+r of words. The
+ FAT entries ar
+e traversed and
+ all the files 
+and their corre
+sponding sizes 
+are displayed.
+
+     Syntax: ls
+
+
+Display Disk Fr
+ee List
+
+
+
+The command df 
+displays the di
+sk free list. I
+t also displays
+ the total numb
+er of blocks an
+d the number of
+ free blocks.
+
+     Syntax: df
+
+
+Display File co
+ntents
+
+
+
+The command cat
+ displays the c
+ontents of a fi
+le in the files
+ystem. The FAT 
+entries are sea
+rched to get th
+e blocks corres
+ponding to the 
+file. The block
+s are displayed
+.
+
+     Syntax: ca
+t <xfs_filename
+>
+
+Copy disk block
+s to a UNIX fil
+e
+
+
+
+The command cop
+y copies the co
+ntents of speci
+fied blocks in 
+the filesystem 
+to an external 
+UNIX file. The 
+arguments <star
+t_block> and <e
+nd_block> denot
+es the range of
+ blocks to be c
+opied (includin
+g both). <unix_
+filename> speci
+fes the destina
+tion UNIX file 
+to which the co
+ntents are copi
+ed to.
+
+     Syntax: co
+py <start_block
+> <end_block> <
+unix_filename>
+
+Display help
+
+
+
+The command hel
+p displays the 
+general syntax 
+and function of
+ all the comman
+ds.
+
+     Syntax: he
+lp
+
+Exit Interface
+
+
+
+The command exi
+t quits the int
+eface.
+
+     Syntax: ex
+it
+
+Example Usage
+
+To load a file 
+os_startup.xsm 
+( which you cre
+ated using SPL 
+compiler ) loca
+ted in $HOME/my
+xos/spl into th
+e xfs filesyste
+m
+
+
+
+cd $HOME/myxos/
+xfs-interface
+
+./xfs-interface
+
+
+
+
+This will show 
+the xfs-interfa
+ce. First issue
+ a fdisk comman
+d. This will cr
+eate a disk.xfs
+ file in the di
+rectory $HOME/m
+yxos/xfs-interf
+ace. This file 
+simulates the h
+ard disk for XS
+M (Machine Simu
+lator).
+
+fdisk
+
+Now use the loa
+d command to lo
+ad the os_start
+up.xsm.
+
+load --os $HOME
+/myxos/spl/samp
+les/os_startup.
+xsm
+
+If you want to 
+see whether loa
+d command works
+ properly, copy
+ the block 0 (f
+rom 0 to 0) in 
+disk.xfs back t
+o a unix file, 
+say $HOME/myxos
+/xfs-interface/
+test
+
+copy 0 0 $HOME/
+myxos/xfs-inter
+face/test
+
+Now open test t
+o see the conte
+nts of os_start
+up.xsm
+
+top ↑
+
+XSM Simulator
+
+Introduction
+
+
+
+The XSM Simulat
+or (eXperimenta
+l String Machin
+e) is used to s
+imulate the XSM
+ hardware. See 
+Machine Specifi
+cation
+
+top ↑
+
+Installation
+
+Prerequisites
+
+
+
+    GCC (GNU pr
+oject C and C++
+ compiler)
+
+
+
+    Flex / Lex 
+(Fast Lexical A
+nalyser Generat
+or)
+
+
+
+    Bison / Yac
+c (GNU Project 
+Parser Generato
+r)
+
+
+
+
+
+Running
+
+
+
+Within your XSM
+ directory, use
+ the following 
+command to run 
+the simulator
+
+
+
+    ./xsm flag
+
+
+
+Flags
+
+
+
+    --debug : T
+his flag sets t
+he machine into
+ DEBUG mode whe
+n it encounters
+ a BRKP machine
+ instruction. F
+urther details 
+are given in th
+e section below
+.
+
+
+
+    --timer=val
+ue : This flag 
+sets the number
+ of instruction
+s after which t
+imer interrupt 
+is triggered to
+ value. --timer
+=0 disables the
+ timer. The ran
+ge of value is 
+from 0 to 1024
+
+
+
+Debugging
+
+
+
+The --debug fla
+g is used to de
+bug the running
+ machine. When 
+this flag is se
+t and the machi
+ne encounters a
+ breakpoint ins
+truction, it is
+ set into the D
+EBUG mode. In t
+his mode a prom
+pt is displayed
+ which allows t
+he user to ente
+r commands to i
+nspect the stat
+e of the machin
+e.
+
+
+
+The commands in
+ DEBUG mode are
+
+
+
+
+    step / s :
+
+    The executi
+on proceeds by 
+a single step
+
+
+
+    continue / 
+c :
+
+    The executi
+on proceeds til
+l the next brea
+kpoint instruct
+ion.
+
+
+
+    reg / r :
+
+    Displays th
+e contents of a
+ll the register
+s in the machin
+e namely IP, SP
+, BP, PTBR, PTL
+R, EFR, R0-R7, 
+S0-S15 and T0-T
+3.
+
+    Sample usag
+e: reg
+
+
+
+    reg / r <re
+gister_name> :
+
+    Displayes t
+he content of t
+he specified re
+gister.
+
+    Sample usag
+e: r R5, reg PT
+LR
+
+
+
+    reg / r <re
+gister_name_1> 
+<register_name_
+1> :
+
+    Displays th
+e contents of t
+he registers fr
+om <register_na
+me_1> to <regis
+ter_name_1>.
+
+
+
+    mem / m <pa
+ge_num> :
+
+    Displays co
+ntents of the m
+emory page <pag
+e_num>.
+
+    Sample usag
+e: mem 5, m 20
+
+
+
+    mem / m <pa
+ge_num_1> <page
+_num_2> :
+
+    Displays th
+e contents of t
+he memory from 
+pages <page_num
+_1> to <page_nu
+m_2>.
+
+    Sample usag
+e: mem 5 8, m 0
+ 10
+
+
+
+    pcb / p :
+
+    Displays th
+e Process Contr
+ol Block of the
+ process with t
+he state as RUN
+NING.
+
+
+
+    pcb / p <pi
+d> :
+
+    Displays th
+e Process Contr
+ol Block of the
+ process with t
+he given <pid>.
+
+
+
+
+    pagetable /
+ pt :
+
+    Displays th
+e Page Table at
+ the location p
+ointed by PTBR 
+(Page Table Bas
+e Register).
+
+
+
+    pagetable /
+ pt <pid> :
+
+    Displays th
+e <pid>th Page 
+Table.
+
+
+
+    filetable /
+ ft :
+
+    Displays th
+e System Wide O
+pen File Table.
+
+
+
+
+    memfreelist
+ / mf :
+
+    Displays th
+e Memory Free L
+ist.
+
+
+
+    diskfreelis
+t / df :
+
+    Displays th
+e Memory copy o
+f Disk Free Lis
+t.
+
+
+
+    fat :
+
+    Displays th
+e memory copy o
+f the File Allo
+cation Table (F
+AT).
+
+
+
+    location / 
+l <address> :
+
+    Displays th
+e content at me
+mory address (A
+ddress Translat
+ion takes place
+ if used in USE
+R mode).
+
+
+
+    watch / w <
+physical_addres
+s> :
+
+    Sets a watc
+h point to this
+ address. Watch
+ point is used 
+to track change
+s of a particul
+ar memory locat
+ion. Whenever a
+ word which is 
+watched is alte
+red, debug inte
+rface is invoke
+d. Atmost 16 wa
+tch points can 
+be set.
+
+
+
+    watchclear 
+/ wc :
+
+    Clears all 
+the watch point
+s.
+
+
+
+    exit / e :
+
+    Exits the d
+ebug prompt and
+ halts the mach
+ine.
+
+
+
+    help / h :
+
+    Displays co
+mmands.
+
+
+
+top ↑
+
+
+
+    Github
+
+
+
+↑
+
+
+
+    Home
+
+    About
+
+    Documentati
+on
+
+    Downloads
+
+    Roadmap
+
+
+
+
+
+Jayaprakash A S
+econd File
+
+
+
+
+
+
+
+
+
+
+
+

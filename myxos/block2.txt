@@ -1,0 +1,691 @@
+
+
+Designa Studio
+
+
+
+    Home
+
+    About
+
+    Documentati
+on
+
+    Downloads
+
+    Roadmap
+
+
+
+Usage Documenta
+tion
+
+
+
+
+
+    Introductio
+n
+
+    Setting
+
+    SPL Compile
+r
+
+    Introductio
+n
+
+    Installatio
+n
+
+    APL Compile
+r
+
+    Introductio
+n
+
+    Installatio
+n
+
+    XFS Interfa
+ce
+
+    Introductio
+n
+
+    Installatio
+n
+
+    Commands
+
+    XSM Simulat
+or
+
+    Introductio
+n
+
+    Installatio
+n
+
+
+
+Introduction
+
+
+
+This documentat
+ion describes t
+he usage instru
+ctions for SPL 
+Compiler (Syste
+m Programmer’
+s Language Comp
+iler), APL Comp
+iler (Applicati
+on Programmer�
+�s Language Com
+piler) , XFS In
+terface (eXperi
+mental File Sys
+tem Interface) 
+and XSM Simulat
+or (eXperimenta
+l String Machin
+e).
+
+top ↑
+
+Setting Up
+
+
+
+    Download th
+e complete pack
+age. Go to down
+loads page.
+
+    Copy the ta
+r file to your 
+home directory.
+
+
+    cp myxos.ta
+r.gz $HOME/
+
+    Extract the
+ contents using
+ the command.
+
+    tar -xvf my
+xos.tar.gz
+
+    Now you wil
+l have a direct
+ory myxos in yo
+ur home drector
+y, with all com
+ponents require
+d for building 
+your own XOS
+
+    Change dire
+ctory to myxos 
+directory
+
+    cd $HOME/my
+xos
+
+    Make sure a
+ll the prerequi
+sites which inc
+lude gcc, flex/
+lex and bison/y
+acc are install
+ed.
+
+    In Ubuntu/D
+ebian systems, 
+use apt to inst
+all flex and bi
+son.
+
+    sudo apt-ge
+t install flex 
+bison
+
+    Make to bui
+ld all the comp
+onents.
+
+    make
+
+
+
+If the setup wo
+rked correctly,
+ the following 
+executables wil
+l be created
+
+
+
+    spl in $HOM
+E/myxos/spl fol
+der
+
+    apl in $HOM
+E/myxos/apl fol
+der
+
+    xfs-interfa
+ce in $HOME/myx
+os/xfs-interfac
+e folder
+
+    xsm in $HOM
+E/myxos/xsm fol
+der
+
+
+
+top ↑
+
+SPL Compiler
+
+Introduction
+
+
+
+SPL Compiler (S
+ystem Programme
+r’s Language 
+Compiler) is us
+ed in the imple
+mentation of an
+ operating syst
+em on XSM (eXpe
+rimental String
+ Machine). The 
+compiler compil
+es the code wri
+tten in SPL and
+ translates it 
+into machine co
+de which is sim
+ulated on the m
+achine. SPL spe
+cification is a
+vailable here.
+
+top ↑
+
+Installation
+
+Prerequisites
+
+
+
+    GCC (GNU pr
+oject C and C++
+ compiler)
+
+
+
+    Flex / Lex 
+(Fast Lexical A
+nalyser Generat
+or)
+
+
+
+    Bison / Yac
+c (GNU Project 
+Parser Generato
+r)
+
+
+
+
+
+Running
+
+
+
+Within your spl
+ directory, use
+ the following 
+commands to run
+ the SPL compil
+er
+
+
+
+    ./spl flag 
+path-to-spl-pro
+gram
+
+
+
+Flags
+
+Any one of thes
+e flags is requ
+ired to compile
+.
+
+
+
+    --os : Comp
+ile OS Code. Th
+e compiled outp
+ut filename wil
+l be os_startup
+.xsm
+
+
+
+    --int=timer
+ : Compile Time
+r Interrupt cod
+e. The compiled
+ output filenam
+e will be timer
+.xsm
+
+
+
+    --int=[1-7]
+ : Compile Inte
+rrupt routines.
+ The compiled o
+utput filename 
+will be int1.xs
+m, int2.xsm...
+
+
+
+    --exhandler
+ : Compile Exce
+ption Handler. 
+The compiled ou
+tput filename w
+ill be exhandle
+r.xsm
+
+
+
+Example Usage
+
+
+
+cd $HOME/myxos/
+spl 
+
+./spl --os samp
+les/hello-world
+.spl 
+
+
+
+A file os_start
+up.xsm is creat
+ed in $HOME/myx
+os/spl/samples/
+.
+
+top ↑
+
+APL Compiler
+
+Introduction
+
+
+
+APL Compiler (A
+pplication Prog
+rammer’s Lang
+uage Compiler) 
+is used to writ
+e programs whic
+h can be run on
+ XOS (eXperimen
+tal Operating S
+ystem). The com
+piler compiles 
+the program wri
+tten in APL and
+ translates it 
+into machine co
+de which is sim
+ulated on the m
+achine. APL spe
+cification is a
+vailable here.
+
+top ↑
+
+Installation
+
+Prerequisites
+
+
+
+    GCC (GNU pr
+oject C and C++
+ compiler)
+
+
+
+    Flex / Lex 
+(Fast Lexical A
+nalyser Generat
+or)
+
+
+
+    Bison / Yac
+c (GNU Project 
+Parser Generato
+r)
+
+
+
+
+
+Running
+
+
+
+Within your APL
+ directory, use
+ the following 
+commands to run
+ the APL compil
+er
+
+
+
+    ./apl path-
+to-file
+
+
+
+The output file
+ will be in the
+ same location 
+as the input fi
+le and filename
+ will be same w
+ith the extensi
+on changed to x
+sm. For example
+ if input file 
+is prime.apl, o
+utput file is p
+rime.xsm
+
+
+
+Example Usage
+
+
+
+cd $HOME/myxos/
+apl 
+
+./apl samples/l
+argest.apl
+
+
+
+The file larges
+t.apl is a samp
+le APL program 
+which finds lar
+gest of 4 numbe
+rs. This progra
+m is compiled t
+o $HOME/myxos/a
+pl/samples/larg
+est.xsm.
+
+top ↑
+
+XFS Interface
+
+Introduction
+
+
+
+XFS Interface (
+eXperimental Fi
+le System Inter
+face) is an ext
+ernal interface
+ to access the 
+filesystem of t
+he XOS. The fil
+esystem is simu
+lated on a bina
+ry file called 
+disk.xfs. The i
+nterface can fo
+rmat the disk, 
+load/remove fil
+es, list files 
+and copy blocks
+ to a UNIX file
+. See Filesyste
+m specification
+.
+
+top ↑
+
+Installation
+
+Prerequisites
+
+
+
+    GCC (GNU pr
+oject C and C++
+ compiler)
+
+
+
+
+
+Running
+
+
+
+Within your xfs
+-interface dire
+ctory, use the 
+following comma
+nds to run the 
+interface
+
+
+
+    ./xfs-inter
+face
+
+
+
+top ↑
+
+Commands
+
+
+
+Type the comman
+d help in the i
+nterface to dis
+play the list o
+f commands.
+
+Format the disk
+
+
+
+
+The command fdi
+sk is used to c
+reate the disk 
+(”disk.xfs”
+) or to format 
+the disk if alr
+eady created. O
+n a newly creat
+ed disk or form
+atted disk the 
+Disk Free List 
+and FAT entries
+ are initialize
+d.
+
+     Syntax: fd
+isk
+
+Load Files
+
+
+
+The command loa
+d is used to lo
+ad files from t
+he UNIX filesys
+tem to the XFS 
+disk. The type 
+of the file tha
+t is loaded is 
+specified by th
+e first argumen
+t. The second a
+rgument <pathna
+me> is the path
+ to the UNIX fi
+le which is to 
+be loaded to th
+e filesystem.
+
+The command che
+cks the size of
+ the file (exec
+utable or data 
+files) and allo
+cates blocks to
+ it. A correspo
+nding FAT entry
+ is created for
+ the file. For 
+the OS startup 
+code, interrupt
+ routines and e
+xception handle
+r, the file is 
+loaded to the c
+orresponding lo
+cation in the d
+isk ( Refer dis
+k organization 
+).
+
+
+
+    Syntax: loa
+d --exec <pathn
+ame>
+
+         Loads 
+an executable f
+ile to XFS disk
+
+
+
+
+    Syntax: loa
+d --init <pathn
+ame>
+
+         Loads 
+INIT code to XF
+S disk
+
+
+
+    Syntax: loa
+d --data <pathn
+ame>
+
+         Loads 
+a data file to 
+XFS disk
+
+
+
+    Syntax: loa
+d --os <pathnam
+e>
+
+         Loads 
+OS startup code
+ to XFS disk
+
+
+
+    Syntax: loa
+d --int=timer <
+pathname>
+
+         Loads 
+Timer Interrupt
+ routine to XFS
+ disk
+
+
+
+    Syntax: loa
+d --int=[1-7] <
+pathname>
+
+         Loads 
+the specified I
+nterrupt routin
+e to XFS disk
+
+
+
+    Syntax: loa
+d --exhandler <
+pathname>
+
+         Loads 
+exception handl
+er routine to X
+FS disk
+
+
+
+Remove Files
+
+
+
+The command rm 
+is used to remo
+ve files from t
+he filesystem. 
+The first argum
+ent specifies t
+he type of file
+ to be removed.
+ The argument <
+xfs_filename> s
+pecifies the fi
+le which is to 
+be removed.
+
+The command sea
+rches the FAT e
+ntries for the 

@@ -1,0 +1,9 @@
+Example
+
+Consider the example illustrated by figure 3. From the figure, we infer the following:
+
+    The zeroth data block of the file resides in the disk in block number 240
+    The first data block of the file resides in the disk in block number 420. The second data block of the file resides in the disk in block number 101. The third data block of the file resides in the disk in block number 315
+    There are no more data blocks for the file. So rest of the entries of the basic block are marked as -1.
+
+Jayaprakash A Second File
