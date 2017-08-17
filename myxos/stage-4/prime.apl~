@@ -6,7 +6,10 @@ integer main()
 	integer number,index,flag;
 	print ("Enter the value of n:");
 	read (n);
-	number=2;
+	if (n <= 2) then
+		print ("2");
+	endif;
+	number=3;
 	while (number <= n) do
 		index = 2;
 		flag = 0;
@@ -20,7 +23,7 @@ integer main()
 		if(flag == 0) then
 			print (number);
 		endif;				
-		number = number + 1;
+		number = number + 2;
 	endwhile;
 	return 0;
 }
