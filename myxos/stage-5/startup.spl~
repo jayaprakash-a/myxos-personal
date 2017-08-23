@@ -1,7 +1,7 @@
 load(7,1);
 load(8,2);
 load(23,17);
-load(23,18);
+load(24,18);
 [READY_LIST + 0] = 0;
 load(25,21); // Load 1st page of code from disk to memory
 load(26,22); // Load 2nd page of code from disk to memory
@@ -12,10 +12,10 @@ PTBR = 1024;
 PTLR = 4; 
 [PTBR + 0] = 25; 
 [PTBR + 1] = "01"; 
-[PTBR + 0] = 26; 
-[PTBR + 1] = "01"; 
-[PTBR + 0] = 27; 
-[PTBR + 1] = "01"; 
+[PTBR + 2] = 26; 
+[PTBR + 3] = "01"; 
+[PTBR + 4] = 27; 
+[PTBR + 5] = "01"; 
 [PTBR + 6] = 28;
 [PTBR + 7] = "01";
 
