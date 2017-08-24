@@ -1,0 +1,12 @@
+alias currentPID S0;// Finding ou the pid using the formula
+currentPID = (PTBR - 1024) / 8;
+
+
+alias currentPCB S1; // Finding the PCB of the current PID
+currentPCB = READY_LIST + 32 * currentPID; 
+
+[ currentPCB + 1 ] = 1; // Set STATE to READY
+[ currentPCB + 2 ] = BP;
+[ currentPCB + 3 ] = SP - 1; 
+
+ireturn;
