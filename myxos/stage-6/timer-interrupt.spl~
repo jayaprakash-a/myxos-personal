@@ -33,7 +33,6 @@ physicalSP = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
 [ currentPCB + 13 ] = R6;
 [ currentPCB + 14 ] = R7;
 
-//the next process to be scheduled for execution is to be selected. Done in round robuin fashion
 alias newPCB S3;
 newPCB = READY_LIST + (((currentPID+1)%2) * 32);
 
