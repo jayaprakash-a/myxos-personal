@@ -36,6 +36,7 @@ load (10, 4);//loading timer interrupt routine
 [READY_LIST + 1] = 2;
 SP = 3 * 512; //stack pointer
 [28 * 512] = 0;
+
 load (5, 19);			//loading FAT block in disc
 load (6, 20);			//load dfs list
 

@@ -28,12 +28,69 @@ if (sysCallNo == 1) then
 	while(index < 3583) do// Till block number 447 Blocks 448 - 511 are reserved for swap area which will be used for virtual memory management
 		if([index] == 0) then
 			freeBlock = index;
+			break;
 		endif;
+		
 		index = index + 1;
 	endwhile;
 
 	freeBlock = freeBlock - 3072;
-	if([freeBlock] == -1) then
+	if(freeBlock == -1) then
 		[physicalStackPtr - 2] = -1;
 		ireturn;
 	endif;
+
+//the memory copy of the FAT is searched for a free entry. 
+//A free entry in the FAT is indicated by -1 in the entry for basic block (word 2 of each FAT entry)
+	
+	alias fSpace S5;
+	fSpace = -1;
+	index = FAT;
+	while (index < 3072) do
+		if([index + 2] == -1) then
+			fSpace = index;
+			break;
+		endif;
+		index = index + 8;
+	endwhile;
+
+	if(fSpace == -1) then
+		[physicalStackPtr - 2] = -1;
+		ireturn;
+	endif;
+
+	[fSpace] = fileName;
+	[fSpace + 1] = 0;
+	[fSpace + 2] = freeBlock;
+
+//Scratchpad is a memory page used to load a disk block to memory for reading or editing. 
+//It uses the same memory page as OS Startup Code
+
+	load (1, freeBlock);
+
+//All the words in the basic block loaded to the scratchpad must be set to -1. 
+//This indicates that there are no data blocks currently for this file. 
+//After this is done, the basic block residing in the scratchpad needs to be stored back to the disk
+
+	alias size S6;
+	size = 512;
+	while(size < 2 * 512) do
+		[size] = -1;
+		size = size + 1;
+	endwhile;
+	
+	[physicalStackPtr - 2] = 0;
+	store (1, freeBlock);
+	[freeBlock + 3072] = 1;
+
+//The updated copies of FAT and Disk Free List in the memory are then stored back to the disk. 
+
+	store (5, 19);
+	store (6, 20);
+	ireturn;
+
+
+endif;
+
+ireturn;		
+
