@@ -1,0 +1,39 @@
+alias physicalStackPtr S0;
+physicalStackPtr = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
+
+
+alias sysCallNo S1;
+sysCallNo = [physicalStackPtr - 1]; //The system call number is at the 2nd position from the top of the stack, i.e. SP - 1.
+
+
+//The Create system call takes the filename of the file to be created as the argument
+alias fileName S2;
+fileName = [physicalStackPtr - 3];//Fetch the arguments from 3rd position onwards in the stack
+
+if (sysCallNo == 1) then
+	alias index S3;
+	index = FAT;
+	//to check if a file with the same name already exists.
+	while(index < 3072) do //????
+		if([index] == fileName) then
+			[physicalStackPtr - 2] = 0;
+			ireturn;
+		endif;
+		index = index + 8;
+	endwhile;
+	//If the file does not already exist, a file with this filename is to be created. 
+
+	alias freeBlock S4;
+	index = 3072;
+	while(index < 3583) do// Till block number 447 Blocks 448 - 511 are reserved for swap area which will be used for virtual memory management
+		if([index] == 0) then
+			freeBlock = index;
+		endif;
+		index = index + 1;
+	endwhile;
+
+	freeBlock = freeBlock - 3072;
+	if([freeBlock] == -1) then
+		[physicalStackPtr - 2] = -1;
+		ireturn;
+	endif;
