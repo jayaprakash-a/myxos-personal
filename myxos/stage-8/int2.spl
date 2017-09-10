@@ -1,0 +1,132 @@
+alias physical_stack_ptr S0;
+physical_stack_ptr = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
+
+
+alias sysCallNo S1;
+sysCallNo = [physical_stack_ptr - 1]; //The system call number is at the 2nd position from the top of the stack, i.e. SP - 1.
+
+
+//The Create system call takes the filename of the file to be created as the argument
+alias fileName S2;
+fileName = [physical_stack_ptr - 3];//Fetch the arguments from 3rd position onwards in the stack
+
+if (sysCallNo == 2) then
+	alias index S3;
+	alias FAT_ENTRY S4;
+	FAT_ENTRY = -1;
+	index = FAT;
+	//to check if a file with the same name already exists.
+	while(index < 3072) do //????
+		if([index] == fileName) then
+			FAT_ENTRY = (index - FAT) / 8;
+		endif;
+		index = index + 8;
+	endwhile;
+	
+	if(FAT_ENTRY == -1) then
+		[physical_stack_ptr -2] = -1;
+		ireturn;   //return after pushing -1 in the stack
+	endif;
+
+	index = 0;
+	alias ENTRY_SYSTEM_TABLE S5;
+	ENTRY_SYSTEM_TABLE = -1;
+	while ( index <  128) do //Checking if there is an entry in system wide open table
+		if([ FILE_TABLE + index] == FAT_INDEX) then
+			ENTRY_SYSTEM_TABLE = index/2;
+			break;
+		endif;	
+		index = index + 2;			
+	endwhile;
+
+	if(ENTRY_SYSTEM_TABLE == -1) then // If there is no entry in system table then find a free entry 
+		index = 0;
+		while ( index <  128) do
+			if([FILE_TABLE + index] == -1)then
+				ENTRY_SYSTEM_TABLE = index / 2;
+				break;
+			endif;
+			index = index + 2;			
+		endwhile;	
+	endif;
+
+	if(ENTRY_SYSTEM_TABLE == -1) then // If there is no free entry in the per process open file table
+		[physical_stack_ptr -2] = -1;
+		ireturn;   //return after pushing -1 in the stack
+	endif;
+
+	alias currentPID S9;
+	currentPID = (PTBR - 1024) / 8;
+
+	index = 15;
+
+	alias PER_PROCESS_OPEN_FILE_TABLE_FREE_ENTRY S6;
+	PER_PROCESS_OPEN_FILE_TABLE_FREE_ENTRY = -1;
+
+
+	while(index <= 30) do	//find a preprocess page table free entry 
+		if([ READY_LIST + currentPID * 32 +  index ] == -1) then
+			PER_PROCESS_OPEN_FILE_TABLE_FREE_ENTRY = (index - 15) / 2;
+			break;
+		endif;
+		index = index + 2;
+	endwhile; 
+
+	if (PER_PROCESS_OPEN_FILE_TABLE_FREE_ENTRY == -1) then
+		[physical_stack_ptr -2] = -1;
+		ireturn;   //return after pushing -1 in the stack
+	endif;
+
+	[READY_LIST + currentPID * 32 +  15 + PER_PROCESS_OPEN_FILE_TABLE_FREE_ENTRY * 2] = ENTRY_SYSTEM_TABLE;
+	[READY_LIST + currentPID * 32 +  15 + PER_PROCESS_OPEN_FILE_TABLE_FREE_ENTRY * 2 + 1] = 0;	//lseek position is set to zero
+	[FILE_TABLE + ENTRY_SYSTEM_TABLE * 2] = FAT_INDEX;
+
+
+	[FILE_TABLE + ENTRY_SYSTEM_TABLE * 2 + 1] = [FILE_TABLE + ENTRY_SYSTEM_TABLE * 2 + 1] + 1;
+
+	[physical_stack_ptr -2] = PER_PROCESS_OPEN_FILE_TABLE_FREE_ENTRY;	//return the file descriptor
+	ireturn;   //return after pushing -1 in the stack
+
+
+endif;
+
+
+
+if(sysCallNo == 3) then
+
+	alias file_descriptor S3;
+	file_descriptor = [physical_stack_ptr-3];
+
+
+	if(file_descriptor > 7 || file_descriptor < 0) then	//check if the file descriptor is valid
+		[physical_stack_ptr -2] = -1;
+		ireturn;   //return after pushing -1 in the stack
+	endif;
+
+
+	alias currentPID S4;
+	currentPID = (PTBR - 1024) / 8;
+
+
+	if([READY_LIST + 32 * currentPID + 15 + file_descriptor * 2] == -1) then
+		[physical_stack_ptr -2] = -1;	//if pointer to sys_wide_table is -1 then it is invalid
+		ireturn;   //return after pushing -1 in the stack
+	endif;
+
+
+	alias ENTRY_SYSTEM_TABLE S5;
+	ENTRY_SYSTEM_TABLE = [READY_LIST + 32 * currentPID + 15 + file_descriptor * 2];
+
+	[FILE_TABLE + 2 * ENTRY_SYSTEM_TABLE + 1] = [FILE_TABLE + 2 * ENTRY_SYSTEM_TABLE + 1] - 1; // decrementing the file count 
+	if([FILE_TABLE + 2 * ENTRY_SYSTEM_TABLE + 1] == 0) then
+		[FILE_TABLE + 2 * ENTRY_SYSTEM_TABLE ] = -1; //if it is zero then it should be invalidated
+	endif;
+
+	[READY_LIST + 32 * currentPID + 15 + file_descriptor * 2] = -1;	//invalidating the preprocess open file table entry
+	[physical_stack_ptr -2] = 0;
+	ireturn;   //return after pushing 0 in the stack indicating success
+
+
+endif;
+ireturn;		
+

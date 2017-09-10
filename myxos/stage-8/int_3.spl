@@ -1,0 +1,90 @@
+alias physicalSP S0;
+physicalSP = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512); //calculating the physical address of the stack top
+
+
+alias sysCallNo S1;
+
+// Get system call no. from the stack and put it in a register
+// Get arguments from stack and put it in registers
+
+sysCallNo = [physicalSP-1];
+
+
+breakpoint;
+
+if(sysCallNo == 6) then
+	alias file_descriptor S2;
+	alias new_lseek S3;
+	file_descriptor = [physicalSP - 4];
+	new_lseek = [physicalSP - 3]; 
+	if (file_descriptor > 7 || file_descriptor < 0) then  
+		[physicalSP - 2] = -1;
+		ireturn;      //returning with failure status because the file descriptor is invalid
+	endif;
+	alias currentPID S4;
+	currentPID = ( PTBR - 1024 ) / 8;
+	alias ENTRY_SYS_TABLE_PTR S5;
+	ENTRY_SYS_TABLE_PTR = [READY_LIST + 15 + 32 * currentPID + file_descriptor * 2];
+	if ( ENTRY_SYS_TABLE_PTR == -1 ) then
+		[physicalSP - 2] = -1;
+		ireturn;      //returning with failure status because the pointer to the system wide open table is invalid
+	endif;
+	alias FAT_INDEX S6;
+	FAT_INDEX =  [ FILE_TABLE + 2 * ENTRY_SYS_TABLE_PTR ]; //finding the fat index from system wide open table
+	alias file_size S7;
+	file_size = [FAT + 8*FAT_INDEX + 1];
+	//print(new_lseek);
+	//print(file_size);
+	if (new_lseek < 0 || new_lseek > file_size) then
+		//print("returning");
+		[physicalSP - 2] = -1;
+		ireturn;      //returning with failure status because the lseek position is invalid
+	endif;
+	[READY_LIST + 15 + 32 * currentPID + file_descriptor * 2 + 1] = new_lseek;
+	//print("new lseek");
+	//print(new_lseek);
+	[physicalSP - 2] = 0;
+	ireturn ; // returning with success 
+endif;
+if(sysCallNo == 7) then
+	alias file_descriptor S2;
+	alias word_to_read S3;
+	file_descriptor = [physicalSP - 4];
+	word_to_read = [physicalSP - 3];
+	if (file_descriptor > 7 || file_descriptor < 0) then
+		[physicalSP - 2] = -1;
+		ireturn;      //returning with failure status because the file descriptor is invalid
+	endif;
+	alias currentPID S4;
+	currentPID = ( PTBR - 1024 ) / 8;
+	alias ENTRY_SYS_TABLE_PTR S5;
+	ENTRY_SYS_TABLE_PTR = [READY_LIST + 15  + 32 * currentPID + file_descriptor * 2];
+	if ( ENTRY_SYS_TABLE_PTR == -1 ) then
+		[physicalSP - 2] = -1;
+		ireturn;      //returning with failure status because the pointer to the system wide open table is invalid
+	endif;
+	alias lseek_pos S6;
+	lseek_pos = [READY_LIST + 15 + 32 * currentPID + file_descriptor * 2 + 1];
+	//print("lseek");
+	//print(lseek_pos);
+	alias FAT_INDEX S7;
+	FAT_INDEX =  [ FILE_TABLE + 2 * ENTRY_SYS_TABLE_PTR]; //finding the fat index from system wide open table
+	alias basicblock S8;
+	basicblock = [ FAT + 8 * FAT_INDEX + 2 ];
+	load(1,basicblock);
+	if (lseek_pos == [ FAT + 8 * FAT_INDEX + 1 ]) then
+		[physicalSP - 2] = -1;
+		ireturn;      //returning with failure status because we are at the end of the file
+	endif;
+	alias BLOCK_TO_DEAL S9;
+	BLOCK_TO_DEAL = lseek_pos / 512;//finding the block from which we have to read
+	load(1,[512+BLOCK_TO_DEAL]);
+	[physicalSP - 3] = [ 512 + lseek_pos % 512];  //reading from the offset in the block loaded
+	//print("in int");
+	//print([physicalSP - 3]);
+	//print([physicalSP - 4]);
+	[physicalSP - 2] = 0;
+	[READY_LIST + 15 + 32 * currentPID + file_descriptor * 2 + 1]  = lseek_pos + 1;
+	ireturn ; //returning with success
+endif;
+ireturn;
