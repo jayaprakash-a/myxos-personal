@@ -16,7 +16,7 @@ if (sysCallNo == 2) then
 	FAT_ENTRY = -1;
 	index = FAT;
 	//to check if a file with the same name already exists.
-	while(index < 3072) do //????
+	while(index < 3072) do 
 		if([index] == fileName) then
 			FAT_ENTRY = (index - FAT) / 8;
 		endif;
