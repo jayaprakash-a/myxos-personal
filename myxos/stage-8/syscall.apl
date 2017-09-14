@@ -4,7 +4,7 @@ decl
 	string word;
 	string wordread;
 	string filename;
-
+	integer seek;
 	integer openfile[50];
 	integer opencount;
 	integer n;
@@ -12,6 +12,7 @@ decl
 	integer fp2;
 	integer choice;
 	integer enter;
+	integer counter;
 enddecl
 integer main()
 {
@@ -27,17 +28,18 @@ integer main()
 		print("6 : Seek");
 		print("7 : Read");
 		print("8 : Exit");
-		print("Enter the value of n:");
+		print("9 : Word count");
+		print("Choice");
 		read (n);
 	
 		if(n == 1) then
-			print("Enter the name of the file");
+			print("Filename");
 			read(filename);
 			status = Create(filename);
 			print(status);
 		endif;
 		if(n == 2) then
-			print("Enter the name of the file");
+			print("Filename");
 			read(filename);
 			fp = Open(filename);
 			print(fp);
@@ -45,10 +47,11 @@ integer main()
 			opencount = opencount + 1;
 		endif;
 		if(n == 3) then
-			print("Have a look at open files");
+			print("existopen");
 			i = 0;
 			while (i < opencount) do 
 				print(openfile[i]);
+				i = i + 1;
 			endwhile;
 			print("Enter the open file");
 			read(fp2);				
@@ -57,28 +60,32 @@ integer main()
 			print(status);
 		endif;
 		if(n == 4) then
-			print("Enter the name of the file");
+			print("Filename");
 			read(filename);
 			status = Delete(filename);
 			print(status);
 		endif;
 		if(n == 5) then
-			print("Do you wish to open file and write or use existing one");
-			print("1 : open 2 : existing open files");
+			print("choice?");
+			print("1: open");
+			print("2:existing");
 
 			read(choice);
 			if (choice ==1): then 
-				print("Enter the name of the file");
+				print("Filename");
 				read(filename);
 				fp = Open(filename);
 				print("open status is");
 				print(fp);
+				openfile[opencount] = fp;
+				opencount = opencount + 1;
 			endif;
 			if (choice ==2): then 
-				print("Have a look at open files");
+				print("existopen");
 				i = 0;
 				while (i < opencount) do 
 					print(openfile[i]);
+					i = i + 1;
 				endwhile;
 				print("Enter the open file");
 				read(fp);
@@ -89,47 +96,57 @@ integer main()
 			print(status);
 		endif;
 		if(n == 6) then
-			print("Do you wish to open file and write or use existing one");
-			print("1 : open 2 : existing open files");
+			print("choice?");
+			print("1: open");
+			print("2:existing");
 
 			read(choice);
 			if (choice ==1): then 
-				print("Enter the name of the file");
+				print("Filename");
 				read(filename);
 				fp = Open(filename);
 				print("open status is");
 				print(fp);
+				openfile[opencount] = fp;
+				opencount = opencount + 1;
 			endif;
 			if (choice ==2): then 
-				print("Have a look at open files");
+				print("existopen");
 				i = 0;
 				while (i < opencount) do 
 					print(openfile[i]);
+					i = i + 1;
 				endwhile;
 				print("Enter the open file");
 				read(fp);
+				print("Seek");
+				read(seek);
 			endif;
-			status = Seek(fp,0);
+			status = Seek(fp,seek);
 			print(status);
 
 		endif;
 		if(n == 7) then
-			print("Do you wish to open file and write or use existing one");
-			print("1 : open 2 : existing open files");
+			print("choice?");
+			print("1: open");
+			print("2:existing");
 
 			read(choice);
 			if (choice ==1): then 
-				print("Enter the name of the file");
+				print("Filename");
 				read(filename);
 				fp = Open(filename);
 				print("open status is");
 				print(fp);
+				openfile[opencount] = fp;
+				opencount = opencount + 1;
 			endif;
 			if (choice ==2): then 
-				print("Have a look at open files");
+				print("existopen");
 				i = 0;
 				while (i < opencount) do 
 					print(openfile[i]);
+					i = i + 1;
 				endwhile;
 				print("Enter the open file");
 				read(fp);
@@ -137,9 +154,50 @@ integer main()
 			status = Read(fp,word);
 			print("Word read is");
 			print(word);
+			print(status);
 		endif;
 		if(n == 8) then
 			enter = 0;
+		endif;
+		if(n == 9) then
+			print("choice?");
+			print("1: open");
+			print("2:existing");
+
+			read(choice);
+			if (choice ==1): then 
+				print("Filename");
+				read(filename);
+				fp = Open(filename);
+				print("open status is");
+				print(fp);
+				openfile[opencount] = fp;
+				opencount = opencount + 1;
+			endif;
+			if (choice ==2): then 
+				print("existopen");
+				i = 0;
+				while (i < opencount) do 
+					print(openfile[i]);
+					i = i + 1;
+				endwhile;
+				print("Enter the open file");
+				read(fp);
+			endif;
+			print("Word?");
+			read(wordread);
+			status = 0;
+			counter = 0;
+			while(status != -1) do
+				status = Read(fp, word);
+				if(word == wordread) then
+					counter = counter + 1;
+				endif;
+			endwhile;
+			print("Count");
+			print(counter);
+
+			
 		endif;
 
 	endwhile;

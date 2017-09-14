@@ -48,6 +48,16 @@ while ( counter <  128) do			// 64 entries, each of size 2 words
 	counter = counter + 2;			// Move to next entry
 endwhile;
 
+
+alias pid S2;
+pid = (PTBR - 1024)/8;
+counter = 15;
+while (counter < 31) do
+	[READY_LIST + 32*pid + counter] = -1;
+	counter = counter + 1;
+endwhile;
+
+
 load(13,7);    //loading interrupt rountine for interrupt 2
 load(14,8);
 
