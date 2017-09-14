@@ -1,0 +1,101 @@
+alias physical_stack_ptr S0;
+physical_stack_ptr = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512); //calculating the physical address of the stack top
+
+
+alias sysCallNo S1;
+
+// Get system call no. from the stack and put it in a register
+// Get arguments from stack and put it in registers
+
+sysCallNo = [physical_stack_ptr-1];
+
+
+
+if(sysCallNo == 6) then
+	
+	alias file_descriptor S2;
+	alias val_seek S3;
+	
+	file_descriptor = [physical_stack_ptr - 4];
+	
+	val_seek = [physical_stack_ptr - 3]; 
+	
+	if (file_descriptor > 7 || file_descriptor < 0) then  
+		[physical_stack_ptr - 2] = -1;
+		ireturn;      //return failure status because of invalid file descriptor
+	endif;
+	
+	alias current_PID S4;
+	current_PID = ( PTBR - 1024 ) / 8;
+
+	alias ENTRY_SYSTEM_TABLE_PTR S5;
+	
+	ENTRY_SYSTEM_TABLE_PTR = [READY_LIST + 15 + 32 * current_PID + file_descriptor * 2];
+	
+	if ( ENTRY_SYSTEM_TABLE_PTR == -1 ) then
+		[physical_stack_ptr - 2] = -1;
+		ireturn;      //return failure status because of invlaid pointer to the system wide open table
+	endif;
+	
+	alias FAT_INDEX S6;
+	FAT_INDEX =  [ FILE_TABLE + 2 * ENTRY_SYSTEM_TABLE_PTR ]; //finding the fat index from system wide open table
+	alias file_size S7;
+	file_size = [FAT + 8*FAT_INDEX + 1];
+
+
+	if (val_seek < 0 || val_seek > file_size) then
+		[physical_stack_ptr - 2] = -1;
+		ireturn;      ////return failure status because of invalid val_seek
+	endif;
+	[READY_LIST + 15 + 32 * current_PID + file_descriptor * 2 + 1] = val_seek;
+
+	[physical_stack_ptr - 2] = 0;
+	ireturn ; // return success 
+endif;
+if(sysCallNo == 7) then
+	alias file_descriptor S2;
+	alias word_to_read S3;
+	file_descriptor = [physical_stack_ptr - 4];
+	word_to_read = [physical_stack_ptr - 3];
+	if (file_descriptor > 7 || file_descriptor < 0) then
+		[physical_stack_ptr - 2] = -1;
+		ireturn;      //returning with failure status because the file descriptor is invalid
+	endif;
+	alias current_PID S4;
+	current_PID = ( PTBR - 1024 ) / 8;
+	alias ENTRY_SYSTEM_TABLE_PTR S5;
+	ENTRY_SYSTEM_TABLE_PTR = [READY_LIST + 15  + 32 * current_PID + file_descriptor * 2];
+	if ( ENTRY_SYSTEM_TABLE_PTR == -1 ) then
+		[physical_stack_ptr - 2] = -1;
+		ireturn;      //return failure status because of invalid pointer to the system wide open table
+	endif;
+
+
+	alias lseek_pos S6;
+	lseek_pos = [READY_LIST + 15 + 32 * current_PID + file_descriptor * 2 + 1];
+	
+	alias FAT_INDEX S7;
+	FAT_INDEX =  [ FILE_TABLE + 2 * ENTRY_SYSTEM_TABLE_PTR]; //finding the fat index from system wide open table
+	alias basicblock S8;
+	basicblock = [ FAT + 8 * FAT_INDEX + 2 ];
+	
+	load(1,basicblock);
+	if (lseek_pos == [ FAT + 8 * FAT_INDEX + 1 ]) then
+		[physical_stack_ptr - 2] = -1;
+		ireturn;      //returning with failure status because we are at the end of the file
+	endif;
+	
+	alias BLOCK_TO_DEAL S9;
+	BLOCK_TO_DEAL = lseek_pos / 512;//finding the block from which we have to read
+	load(1,[512+BLOCK_TO_DEAL]);
+	[physical_stack_ptr - 3] = [ 512 + lseek_pos % 512];  //reading from the offset in the block loaded
+	
+	[physical_stack_ptr - 2] = 0;
+	[READY_LIST + 15 + 32 * current_PID + file_descriptor * 2 + 1]  = lseek_pos + 1;
+	
+	ireturn ; //returning with success
+
+endif;
+
+
+ireturn;

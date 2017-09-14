@@ -1,0 +1,92 @@
+alias physical_stack_ptr S0;
+physical_stack_ptr = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512); //calculating the physical address of the stack top
+
+
+alias sysCallNo S1;
+
+// Get system call no. from the stack and put it in a register
+// Get arguments from stack and put it in registers
+
+sysCallNo = [physical_stack_ptr-1];
+
+if (sysCallNo == 5) then
+
+	alias file_descriptor S2;
+	alias word_to_write S3;
+	file_descriptor = [physical_stack_ptr - 4];
+	word_to_write   = [physical_stack_ptr - 3];
+
+	if (file_descriptor > 7 || file_descriptor < 0) then
+		[physical_stack_ptr - 2] = -1;
+		ireturn;      //returning with failure status because the file descriptor is invalid
+	endif;
+
+	alias current_PID S4;
+	current_PID = ( PTBR - 1024 ) / 8;
+	alias ENTRY_SYS_TABLE_PTR S5;
+	ENTRY_SYS_TABLE_PTR = [READY_LIST + 15 + 32 * current_PID + file_descriptor * 2];
+
+	if ( ENTRY_SYS_TABLE_PTR == -1 ) then
+		[physical_stack_ptr - 2] = -1;
+		ireturn;      //returning with failure status because the pointer to the system wide open table is invalid
+	endif;
+
+	alias lseek_position S6;
+
+	lseek_position = [READY_LIST + 15 + 32 * current_PID + file_descriptor * 2 + 1];
+
+	alias FAT_INDEX S12;
+	FAT_INDEX =  [ FILE_TABLE + 2 * ENTRY_SYS_TABLE_PTR ]; //finding the fat index from system wide open table
+	alias BASIC_BLOCK S7;                  
+	BASIC_BLOCK = [ FAT + 8 * FAT_INDEX + 2]; //from fat finding the basic block number
+
+	load(1,BASIC_BLOCK);     //loading basic block number to scratchpad
+
+	alias BLOCK_TO_WRITE S8;
+	BLOCK_TO_WRITE = lseek_position / 512;
+
+	if([512 + BLOCK_TO_WRITE] == -1) then	//if we need a new block to write then finding a new one and changing the fat and disk free list values accordingly
+		alias temp S9;
+		temp = 6*512;
+		alias free_block S10;
+		free_block = -1;
+		while(temp < 6*512 + 448) do
+			if ( [temp] == 0 ) then
+				free_block = temp - 6*512;
+				[temp] = 1;	
+				break;
+			endif;
+			temp = temp+1;
+		endwhile;
+		if(free_block == -1) then
+			[physical_stack_ptr - 2] = -1;
+			ireturn ; //return with failure because there are no blocks to write a new word in it
+		endif;
+		
+		[512 + BLOCK_TO_WRITE] = free_block;
+
+		[FAT + FAT_INDEX*8 + 1] = [FAT + FAT_INDEX*8 + 1] + 1;    //Incrementing the file_size by 1 
+		store(1,BASIC_BLOCK); //store the new basic block to the disk
+		store(5,19);   //store the changed fat entry and disk freelist into the disk
+		store(6,20);
+	endif;
+	load(1,BASIC_BLOCK);
+	alias disk_to_written S11;
+	disk_to_written = [512+BLOCK_TO_WRITE];	//stroing the block of the diskback
+
+	load(1,[512+BLOCK_TO_WRITE]);
+
+	[512 + lseek_position % 512] = word_to_write;
+
+	store(1, disk_to_written);
+	[READY_LIST + 15 + 32 * current_PID + file_descriptor * 2 + 1] = lseek_position + 1;
+
+	[FAT + FAT_INDEX*8 + 1] = [FAT + FAT_INDEX*8 + 1] + 1;    //Incrementing the file_size by 1 
+	store(5,19);   //storing changed fat entry and disk freelist into the disk
+
+	[physical_stack_ptr -2] = 0;
+
+	ireturn ; 
+endif;
+
+ireturn;

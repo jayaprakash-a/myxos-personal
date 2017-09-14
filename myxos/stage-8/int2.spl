@@ -32,7 +32,7 @@ if (sysCallNo == 2) then
 	alias ENTRY_SYSTEM_TABLE S5;
 	ENTRY_SYSTEM_TABLE = -1;
 	while ( index <  128) do //Checking if there is an entry in system wide open table
-		if([ FILE_TABLE + index] == FAT_INDEX) then
+		if([ FILE_TABLE + index] == FAT_ENTRY) then
 			ENTRY_SYSTEM_TABLE = index/2;
 			break;
 		endif;	
@@ -60,31 +60,31 @@ if (sysCallNo == 2) then
 
 	index = 15;
 
-	alias PER_PROCESS_OPEN_FILE_TABLE_FREE_ENTRY S6;
-	PER_PROCESS_OPEN_FILE_TABLE_FREE_ENTRY = -1;
+	alias PER_PROCESS_FREE_ENTRY S6;
+	PER_PROCESS_FREE_ENTRY = -1;
 
 
-	while(index <= 30) do	//find a preprocess page table free entry 
+	while(index <= 30) do	//find a perprocess page table free entry 
 		if([ READY_LIST + currentPID * 32 +  index ] == -1) then
-			PER_PROCESS_OPEN_FILE_TABLE_FREE_ENTRY = (index - 15) / 2;
+			PER_PROCESS_FREE_ENTRY = (index - 15) / 2;
 			break;
 		endif;
 		index = index + 2;
 	endwhile; 
 
-	if (PER_PROCESS_OPEN_FILE_TABLE_FREE_ENTRY == -1) then
+	if (PER_PROCESS_FREE_ENTRY == -1) then
 		[physical_stack_ptr -2] = -1;
 		ireturn;   //return after pushing -1 in the stack
 	endif;
 
-	[READY_LIST + currentPID * 32 +  15 + PER_PROCESS_OPEN_FILE_TABLE_FREE_ENTRY * 2] = ENTRY_SYSTEM_TABLE;
-	[READY_LIST + currentPID * 32 +  15 + PER_PROCESS_OPEN_FILE_TABLE_FREE_ENTRY * 2 + 1] = 0;	//lseek position is set to zero
-	[FILE_TABLE + ENTRY_SYSTEM_TABLE * 2] = FAT_INDEX;
+	[READY_LIST + currentPID * 32 +  15 + PER_PROCESS_FREE_ENTRY * 2] = ENTRY_SYSTEM_TABLE;
+	[READY_LIST + currentPID * 32 +  15 + PER_PROCESS_FREE_ENTRY * 2 + 1] = 0;	//lseek position is set to zero
+	[FILE_TABLE + ENTRY_SYSTEM_TABLE * 2] = FAT_ENTRY;
 
 
 	[FILE_TABLE + ENTRY_SYSTEM_TABLE * 2 + 1] = [FILE_TABLE + ENTRY_SYSTEM_TABLE * 2 + 1] + 1;
 
-	[physical_stack_ptr -2] = PER_PROCESS_OPEN_FILE_TABLE_FREE_ENTRY;	//return the file descriptor
+	[physical_stack_ptr -2] = PER_PROCESS_FREE_ENTRY;	//return the file descriptor
 	ireturn;   //return after pushing -1 in the stack
 
 
