@@ -25,6 +25,7 @@ if (sysCallNo == 2) then
 	
 	if(FAT_ENTRY == -1) then
 		[physical_stack_ptr -2] = -1;
+		print("no fat");
 		ireturn;   //return after pushing -1 in the stack
 	endif;
 
@@ -52,6 +53,7 @@ if (sysCallNo == 2) then
 
 	if(ENTRY_SYSTEM_TABLE == -1) then // If there is no free entry in the per process open file table
 		[physical_stack_ptr -2] = -1;
+		print("no free");
 		ireturn;   //return after pushing -1 in the stack
 	endif;
 
@@ -74,6 +76,7 @@ if (sysCallNo == 2) then
 
 	if (PER_PROCESS_FREE_ENTRY == -1) then
 		[physical_stack_ptr -2] = -1;
+		print("perproc");
 		ireturn;   //return after pushing -1 in the stack
 	endif;
 
