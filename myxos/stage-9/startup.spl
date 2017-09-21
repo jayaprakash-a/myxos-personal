@@ -1,0 +1,104 @@
+//Author : Jayaprakash
+// Stage 6 : OS startup code
+// Context switching
+
+
+load(7,1);//loading exhandler
+load(8,2);//loading exhandler
+load(23,17);//loading interrupt 7
+load(24,18);//loading interrupt 7
+[READY_LIST + 0] = 0;
+load(25,21); // Load 1st page of code from disk to memory
+load(26,22); // Load 2nd page of code from disk to memory
+load(27,23); // Load 3rd page of code from disk to memory
+
+
+load (11, 5);//Loading interrupt1
+load (12, 6);
+
+// Setting up page table for 1st process
+PTBR = 1024; 
+PTLR = 4; 
+[PTBR + 0] = 25; 
+[PTBR + 1] = "01"; 
+[PTBR + 2] = 26; 
+[PTBR + 3] = "01"; 
+[PTBR + 4] = 27; 
+[PTBR + 5] = "01"; 
+[PTBR + 6] = 28;
+[PTBR + 7] = "01";
+
+
+//Interrupts
+load (9, 3);//loading timer interrupt routine
+load (10, 4);//loading timer interrupt routine
+
+[READY_LIST + 1] = 2;
+SP = 3 * 512; //stack pointer
+[28 * 512] = 0;
+
+load (5, 19);			//loading FAT block in disc
+load (6, 20);			//load dfs list
+
+alias counter S0;			
+counter = 0;
+while ( counter <  128) do			// 64 entries, each of size 2 words
+	[ FILE_TABLE + counter + 0] = -1;	// Set FAT Index to -1
+	[ FILE_TABLE + counter + 1] =  0;	// Set File Open Count to 0
+	counter = counter + 2;			// Move to next entry
+endwhile;
+
+
+alias pid S2;
+pid = (PTBR - 1024)/8;
+counter = 15;
+while (counter < 31) do
+	[READY_LIST + 32*pid + counter] = -1;
+	counter = counter + 1;
+endwhile;
+
+
+load(13,7);    //loading interrupt rountine for interrupt 2
+load(14,8);
+
+load(15,9);     //loading interrupt rountine for interrupt 3
+load(16,10);
+
+load(17,11);     //loading interrupt rountine for interrupt 4
+load(18,12);
+
+load(19,13);     //loading interrupt rountine for interrupt 5
+load(20,14);
+
+load(21,15);     //loading interrupt rountine for interrupt 6
+load(22,16);
+
+load(23,17);     //loading interrupt rountine for interrupt 7
+load(24,18);
+
+counter = READY_LIST;
+
+
+
+//Initialize all PCBs with STATE field 0. This will be necessary to search for a free PCB in memory. A free PCB in XOS is indicated by STATE 0 (terminated or free) in its PCB. 
+while(counter < READY_LIST + 1024) do
+	[counter + 1] = 0;
+	counter = counter + 32;
+endwhile; 
+
+counter = 0;
+
+
+//Pages 0 to 24 in the memory are reserved for operating system. The pages 25 to 28 are allocated for the INIT process by the OS Startup Code. These pages must be marked as used in the memory free list and the remaining pages must be marked as unused. Used pages are indicated with 1 and unused pages are indicated with 0 in the memory free list. 
+
+while(counter < 29) do
+	[1280 + counter] = 1;
+	counter = counter + 1;
+endwhile; 
+counter = 1309;
+while(counter < 1344) do
+	[counter] = 1;
+	counter = counter + 1;
+endwhile;
+
+ireturn; 

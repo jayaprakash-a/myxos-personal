@@ -1,0 +1,162 @@
+alias physical_stack_ptr S0;
+physical_stack_ptr = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
+
+alias sysCallNo S1;
+sysCallNo = [physical_stack_ptr - 1];
+
+if (sysCallNo == 8) then
+	alias free_pcb S2;
+	free_pcb = 1;
+	while (free_pcb < 32) do
+		if ([READY_LIST + 32 * free_pcb + 1] == 0) then
+			break;
+		endif;
+		free_pcb = free_pcb + 1;
+	endwhile;
+
+	if (free_pcb > 31) then
+		[physical_stack_ptr - 2] = -1;
+		ireturn;
+	endif;
+
+	alias new_pid S3;
+	new_pid = free_pcb;	
+	[READY_LIST + 32 * new_pid ] = new_pid; 	//setting pid value for child process
+
+
+	alias valid_pages S4;
+	valid_pages = 0;
+	
+	alias count S5;
+	count = 0;
+
+
+	while (count < 4) do
+		if ([PTBR + count * 2] != -1) then
+			valid_pages = valid_pages + 1;
+		endif;
+		count = count + 1;
+	endwhile;
+
+
+	alias count_free_pages S6;
+	count_free_pages = 0;
+	count = 1280;
+	while (count < 1344) do
+		if ([count] == 0) then
+			count_free_pages = count_free_pages + 1;
+		endif;
+		if (count_free_pages == valid_pages) then
+			break;
+		endif;
+		count = count + 1;
+	endwhile;
+	
+	if (count_free_pages != valid_pages) then
+		[physical_stack_ptr - 2] = -1;
+		ireturn;
+	endif;
+
+	count = 1280;
+	alias flag S7;
+	flag = 0;
+	while (count < 1344 && valid_pages > 0) do
+		if ([count] == 0 ) then
+			while ([PTBR + flag] == -1) do
+				flag = flag + 2;
+			endwhile;
+			[1024 + 8*new_pid + flag] = count-1280;
+			flag = flag + 2;
+			[count] = 1;
+			valid_pages = valid_pages - 1;
+		endif;
+		count = count + 1;
+	endwhile;
+
+	if (count > 1343) then
+		[physical_stack_ptr - 2] = -1;
+		ireturn;
+	endif;
+
+
+	alias counter S8;
+	counter = 0;
+	count = 0;
+	while(count < 4) do
+		counter = 0;
+		if([PTBR + 2*count] != -1) then
+			while(counter < 512) do
+				[([1024 + 8*new_pid + 2*count])*512 + counter] = [([PTBR + 2*count])*512 + counter];
+				counter = counter + 1;
+			endwhile;
+		endif;
+		count = count + 1;
+	endwhile;	
+
+
+	count = 0;
+	while (count < 4) do
+		[1024 + 8*new_pid + 2*count + 1] = [PTBR + 2*count + 1];
+		if ([PTBR + 2*count] == -1) then
+			[1024 + 8*new_pid + 2*count] = -1;
+		endif;
+		count = count + 1;
+	endwhile;
+	
+	[READY_LIST + 32 * new_pid + 5] = (1024 + 8 * new_pid);	
+	[READY_LIST + 32 * new_pid + 4] = [physical_stack_ptr];		
+	[READY_LIST + 32 * new_pid + 3] = SP - 1;			
+	[READY_LIST + 32 * new_pid + 2] = BP;				
+	[READY_LIST + 32 * new_pid + 6] = 4;					
+	
+	[READY_LIST + 32 * new_pid + 7] = R0;
+	[READY_LIST + 32 * new_pid + 8] = R1;
+	[READY_LIST + 32 * new_pid + 9] = R2;
+	[READY_LIST + 32 * new_pid + 10] = R3;
+	[READY_LIST + 32 * new_pid + 11] = R4;
+	[READY_LIST + 32 * new_pid + 12] = R5;
+	[READY_LIST + 32 * new_pid + 13] = R6;
+	[READY_LIST + 32 * new_pid + 14] = R7;
+
+	count = 0;
+
+	alias pid S9;
+	pid = (PTBR - 1024) / 8;
+	alias free_entry S10;
+
+
+
+	while (count < 8) do
+		if ([READY_LIST + 32*pid + 15 + 2*count] != -1) then
+			free_entry = [READY_LIST + 32*pid + 15 + 2*count];
+			if ([FILE_TABLE + 2 * free_entry] == -1) then
+				[physical_stack_ptr - 2] =-1;
+				ireturn;
+			endif;
+			[FILE_TABLE + 2 * free_entry + 1] = [FILE_TABLE + 2 * free_entry + 1] + 1;
+		endif;
+		[READY_LIST + 32 * new_pid + 15 + 2 * count] = [READY_LIST + 32 * pid + 15 + 2 * count];
+		[READY_LIST + 32 * new_pid + 15 + 2 * count + 1] = [READY_LIST + 32 * pid + 15 + 2 * count + 1];
+		count = count + 1;
+	endwhile;
+
+	[READY_LIST + 32*new_pid + 1] = 1;
+	[READY_LIST + 32*new_pid + 31] = pid;
+	[physical_stack_ptr - 2] = new_pid;
+	
+	alias new_physical_stack_ptr S11;
+	new_physical_stack_ptr = ([(1024 + 8*new_pid) + 2 * ((SP - 1) / 512)] * 512) + ((SP - 1) % 512);
+	[new_physical_stack_ptr - 1] = -2;
+
+
+	ireturn;
+
+endif;
+
+ireturn;
+	
+	
+	
+	
+
+
