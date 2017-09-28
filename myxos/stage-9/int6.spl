@@ -1,0 +1,241 @@
+alias physical_stack_ptr S0;
+physical_stack_ptr = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
+
+alias sys_call_no S1;
+sys_call_no = [physical_stack_ptr - 1];
+
+//Fork: used to load and run a new process in the space of a currently running process. The current process is overwritten by new process i.e. the process data structures and memory of the current process is used by the new process. 
+
+if (sys_call_no == 9) then
+	
+	alias file_name S2;
+	file_name = [physical_stack_ptr - 3];
+//Exec system call needs to load the program which has the filename specified as argument from the disk to the memory. To do this, first search for the filename given as argument in the memory copy of FAT.
+	alias index S3;
+	index = FAT;
+
+	while (index < 3072) do
+		if ([index] == file_name) then
+			break;
+		endif;
+		index = index + 8;
+	endwhile;
+//If it doesn't exist, i.e. if file with the given filename is not present in the disk, return with -1 (indicating failure). 
+	if (index >= 3072) then
+		[physical_stack_ptr - 2] = -1;			
+		ireturn;
+	endif;
+//If a FAT entry is found, fetch the basic block of this file and place it in the scratchpad	
+	alias basic_block S4;
+	basic_block = [index + 2];
+
+	if (basic_block == -1) then
+		[physical_stack_ptr - 2] = -1;
+		ireturn;
+	endif;
+//Count the number of code blocks of the new program. 
+	load (1, basic_block);
+	alias code_blocks S5;
+	code_blocks = 0;
+	
+	alias counter S6;
+	counter = 0;
+	while (counter < 256) do
+		if([counter + 512] != 0) then
+			code_blocks = code_blocks + 1;
+		endif;
+		counter = counter + 1;
+	endwhile;
+// Also Count the number of code pages of the new program. 	
+	alias code_pages S7;
+	code_pages = 0;
+	index = 0;
+	
+	while (index <= 4) do
+		if ([PTBR + 2 * index] != -1) then
+			code_pages = code_pages + 1;
+		endif;
+		index = index + 1;
+	endwhile;
+	
+
+//If the current process has more code pages than the code blocks of the new program, deallocate them by setting memory free list entries to 0 (unused). Also set the physical page number field of the excess pages to -1 and auxiliary information as "00" in the page table of the current process.	
+	alias diff_count S8;
+	if (code_pages > code_blocks) then
+		diff_count = code_pages-code_blocks;
+		index = 2;
+		while (index >= 0) do
+			counter = PTBR + 2 *index
+			if([counter] != -1) then
+
+				[counter] = -1;
+				[counter + 1] = "00";
+				[[counter] + 1280] = 0;
+				diff_count = diff_count - 1;
+			endif;
+			
+			if (diff_count == 0) then
+				break;
+			endif;
+			index = index - 1;
+		endwhile;
+	endif;
+//If the current process has more code pages than the code blocks of the new program, deallocate them by setting memory free list entries to 0 (unused). Also set the physical page number field of the excess pages to -1 and auxiliary information as "00" in the page table of the current process.
+	if (code_pages < code_blocks) then
+		index = 0;
+		diff_count = code_blocks - code_pages;
+		counter = 0;
+
+		while (index < 64) do
+			if ([index + 1280] == 0) then
+				counter = counter + 1;
+			endif;
+			if (counter == diff_count) then
+				break;
+			endif;
+			index = index + 1;
+		endwhile;
+	
+		if (counter != diff_count) then
+			[physical_stack_ptr - 2] = -1;			
+			ireturn;
+		endif;
+
+		counter = 0;
+		index = 0;
+		while (counter <= 4) do
+			if([PTBR + 2*counter] == -1) then
+				while (index < 64) do
+					if([index + 1280] == 0) then
+						break;
+					endif;
+					index = index + 1;
+				endwhile;
+
+				if (index >= 64) then
+					[physical_stack_ptr - 2] = -1;					
+					ireturn;
+				endif;
+	
+				[index + 1280] = 1;
+				[PTBR + 2 * counter] = index;
+				[PTBR + 2 * counter + 1] = "01";
+				index = index + 1;			
+			endif;
+
+			if (code_blocks ==  counter + 1) then
+				break;
+			endif;
+			counter = counter + 1;
+		endwhile;
+
+	endif;
+
+	
+
+	index = 512;
+	counter = 0;
+	
+	while (index < 768 && counter < 3) do
+		if ([index] != -1) then
+			if ([PTBR + 2*counter] != -1) then
+				load ([PTBR + 2*counter], [index]);
+				index = index + 1;
+				counter = counter + 1;
+				continue;
+			endif;
+			counter = counter + 1;
+			continue;
+		endif;
+		index = index + 1;
+	endwhile;
+
+	index = 0;
+	alias pid S9;
+	pid = (PTBR - 1024)/8;
+
+	while (index < 8) do
+		if ([READY_LIST + 32*pid + 15 + 2*index] != -1) then
+			counter = [READY_LIST + 32*pid + 15 + 2*index];
+			if ([FILE_TABLE + 2*counter] == -1) then
+				[physical_stack_ptr - 2] = -1;				
+				ireturn;	
+			endif;
+			
+			[FILE_TABLE + 2*counter + 1] = [FILE_TABLE + 2*counter + 1] - 1;
+			if ([FILE_TABLE + 2*counter + 1] == 0) then
+				[FILE_TABLE + 2*counter] = -1;
+			endif;
+			
+			[READY_LIST + 32*pid + 15 + 2*index] = -1;
+			[READY_LIST + 32*pid + 15 + 2*index + 1] = 0;
+	
+		endif;
+		index  = index + 1;
+	endwhile;
+
+
+	SP = 3*512;
+	physical_stack_ptr = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
+	[physical_stack_ptr] = 0;
+	
+	ireturn;
+	
+endif;
+
+
+if (sys_call_no == 11) then
+//The interrupt 6 routine for Exec system call must be modified to obtain the system call number and take actions according for getting pid of the process, if system call number is 11. The Getpid system call implementation can use the value of PTBR to compute PID as described in the previous stages. This value should be returned to the user program. 
+	alias pid S2;
+	pid = (PTBR - 1024)/8;
+	
+	if (pid <= -1) then					//checking the validity of pid
+		[physical_stack_ptr - 2] = -1;
+		ireturn;
+	endif;
+	
+	if (pid >= 32) then
+		[physical_stack_ptr - 2] = -1;
+		ireturn;
+	endif;
+
+	
+	[physical_stack_ptr - 2] = pid;
+	ireturn;
+
+endif;
+
+
+if (sys_call_no == 12) then
+	alias pid S2;
+	pid = (PTBR - 1024)/8;
+	
+	if (pid <= -1) then					//checking the validity of pid
+		[physical_stack_ptr - 2] = -1;
+		ireturn;
+	endif;
+	
+	if (pid >= 32) then
+		[physical_stack_ptr - 2] = -1;
+		ireturn;
+	endif;
+
+	alias parent_pid S3;
+	parent_pid = [READY_LIST + 32*pid + 31];
+//The Fork system call implementation must be modified, to store the PID of the parent in the Parent PID field in the PCB of the child process created. 	
+	if (parent_pid <= -1) then					//checking the validity of parent pid
+		[physical_stack_ptr - 2] = -1;
+		ireturn;
+	endif;
+	
+	if (parent_pid >= 32) then
+		[physical_stack_ptr - 2] = -1;
+		ireturn;
+	endif;
+
+	[physical_stack_ptr - 2] = parent_pid;
+	ireturn;
+
+endif;
+
+ireturn;		

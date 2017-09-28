@@ -1,6 +1,6 @@
 //Author : Jayaprakash
-// Stage 6 : OS startup code
-// Context switching
+// Stage 9 : OS startup code
+// Process System Calls
 
 
 load(7,1);//loading exhandler
