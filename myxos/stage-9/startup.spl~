@@ -97,7 +97,7 @@ while(counter < 29) do
 endwhile; 
 counter = 1309;
 while(counter < 1344) do
-	[counter] = 0;
+	[counter] = 1;
 	counter = counter + 1;
 endwhile;
 

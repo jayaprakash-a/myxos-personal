@@ -65,7 +65,7 @@ if (sys_call_no == 9) then
 		diff_count = code_pages-code_blocks;
 		index = 2;
 		while (index >= 0) do
-			counter = PTBR + 2 *index;
+			counter = PTBR + 2 *index
 			if([counter] != -1) then
 
 				[counter] = -1;

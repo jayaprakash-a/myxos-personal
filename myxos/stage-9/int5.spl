@@ -1,7 +1,7 @@
 //Author : Jayaprakash
 // Stage 9 : INT 5 code
 // Fork
-
+	print("entered1");
 alias physical_stack_ptr S0;
 physical_stack_ptr = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
 
@@ -10,10 +10,10 @@ sysCallNo = [physical_stack_ptr - 1];
 
 if (sysCallNo == 8) then
 	alias free_pcb S2;
-
+	print("entered2");
 //Find a free PCB in the Ready List of PCBs. A free PCB is indicated with STATE 0 (initially STATEs of all PCBs will be set to 0. Also, upon termination of a process, the STATE will be set to 0. 
 	free_pcb = 1;
-
+print("entered3");
 	while (free_pcb < 32) do
 		if ([READY_LIST + 32 * free_pcb + 1] == 0) then
 			break;
@@ -32,7 +32,7 @@ if (sysCallNo == 8) then
 	new_pid = free_pcb;
 //Set the PID field of the PCB of the child process with the value obtained in Step 2, i.e. the index within the ready list. In XOS, this value is considered to be the PID or Process Identifier for the child process.	
 	[READY_LIST + 32 * new_pid ] = new_pid; 	
-
+print("entered4");
 
 	alias valid_pages S4;
 	valid_pages = 0;
@@ -126,7 +126,7 @@ if (sysCallNo == 8) then
 	[READY_LIST + 32 * new_pid + 14] = R7;
 
 	count = 0;
-
+print("entered5");
 	alias cur_pid S9;
 	cur_pid = (PTBR - 1024) / 8;
 	alias free_entry S10;
@@ -160,7 +160,7 @@ if (sysCallNo == 8) then
 	new_physical_stack_ptr = ([(1024 + 8*new_pid) + 2 * ((SP - 1) / 512)] * 512) + ((SP - 1) % 512);
 	[new_physical_stack_ptr - 1] = -2;
 
-
+print("entered6");
 	ireturn;
 
 endif;
