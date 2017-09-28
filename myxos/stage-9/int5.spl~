@@ -1,164 +1,169 @@
-alias physicalSP S0;
-physicalSP = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
+//Author : Jayaprakash
+// Stage 9 : INT 5 code
+// Fork
+
+
+alias physical_stack_ptr S0;
+physical_stack_ptr = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
 
 alias sysCallNo S1;
-sysCallNo = [physicalSP - 1];
+sysCallNo = [physical_stack_ptr - 1];
 
 if (sysCallNo == 8) then
-	alias fpcb S2;
-	fpcb = 1;
+	alias free_pcb S2;
 
-//____________________________Checking for a Free PCB_________________________
 
-	while (fpcb < 32) do
-		if ([READY_LIST + 32*fpcb + 1] == 0) then
+//Find a free PCB in the Ready List of PCBs. A free PCB is indicated with STATE 0 (initially STATEs of all PCBs will be set to 0. Also, upon termination of a process, the STATE will be set to 0. 
+	free_pcb = 0;
+
+
+	while (free_pcb < 32) do
+		if ([READY_LIST + 32 * free_pcb + 1] == 0) then
 			break;
 		endif;
-		fpcb = fpcb + 1;
+		free_pcb = free_pcb + 1;
 	endwhile;
-	//print ("FPCB::__");
-	//print (fpcb);
 
-	if (fpcb > 31) then
-		[physicalSP - 2] = -1;
+
+//If no such PCB is found, return with -1 from the system call indicating error. This means that the system call could not find space for the PCB of the child process and hence failed. 
+	if (free_pcb >= 32) then
+		[physical_stack_ptr - 2] = -1;
 		ireturn;
 	endif;
+//If a PCB with STATE 0 is found, the index of this PCB in the ready list is stored in a register. 
+	alias new_pid S3;
+	new_pid = free_pcb;
+//Set the PID field of the PCB of the child process with the value obtained in Step 2, i.e. the index within the ready list. In XOS, this value is considered to be the PID or Process Identifier for the child process.	
+	[READY_LIST + 32 * new_pid ] = new_pid; 	
 
-	alias npid S10;
-	npid = fpcb;	
-	[READY_LIST + 32*npid ] = npid; 	//setting pid value for child process
 
-	//print ("NPID::__");
-	//print (npid);
-	alias valid_pages S3;
+
+	alias valid_pages S4;
 	valid_pages = 0;
 	
-	alias count S4;
+	alias count S5;
 	count = 0;
-//___________________________________Calculating no of valid pages in current process_____________________
 
+//Calculating the number of valid pages of current process.
 	while (count < 4) do
-		if ([PTBR + count*2] != -1) then
+		if ([PTBR + count * 2] != -1) then
 			valid_pages = valid_pages + 1;
 		endif;
 		count = count + 1;
 	endwhile;
 
-//_______________________________Calculating free pages in memory________________________
-	alias free_pages S5;
-	free_pages = 0;
-	count = 1280;
-	while (count < 1344) do
-		if ([count] == 0) then
-			free_pages = free_pages + 1;
-		endif;
-		if (free_pages == valid_pages) then
+// Calculating the number of free pages. The page table of the parent process is checked to count the number of valid pages. The memory free list is checked to find an equal number of free pages
+	alias count_free_pages S6;
+	count_free_pages = 0;
+	count = 0;
+	while (count < 64) do
+		if (count_free_pages == valid_pages) then
 			break;
+		endif;
+		if ([count + MEM_LIST] == 0) then
+			count_free_pages = count_free_pages + 1;
+
+		
 		endif;
 		count = count + 1;
 	endwhile;
-	
-	if (free_pages != valid_pages) then
-		[physicalSP - 2] = -1;
+
+
+//If there is not enough free pages in the memory free list, return from the system call with return value -1, indicating failure	
+	if (count_free_pages != valid_pages) then
+		[physical_stack_ptr - 2] = -1;
 		ireturn;
 	endif;
-
-	count = 1280;
-	alias flag S6;
-	flag = 0;
-
-
-//___________________________________Mapping free_pages in memory to data pages of child process_______________	
-
-	while (count < 1344 && valid_pages > 0) do
-		if ([count] == 0 ) then
-			while ([PTBR + flag] == -1) do
-				flag = flag + 2;
+//Otherwise an equal number of pages are allocated for the new child process. To do this, first update the memory free list by setting the corresponding entries for required number of free pages to 1, indicating used. 
+	count = 0;
+	alias index S7;
+	index = 0;
+	while (valid_pages > 0 && count< 64) do
+		if ([count + 1280] == 0 ) then
+			while ([PTBR + index] == -1) do
+				index = index + 2;
 			endwhile;
-			[1024 + 8*npid + flag] = count-1280;
-			flag = flag + 2;
-			[count] = 1;
+			[1024 + 8 * new_pid + index] = count;
+			index = index + 2;
+			[count + 1280] = 1;
 			valid_pages = valid_pages - 1;
 		endif;
 		count = count + 1;
 	endwhile;
 
-	if (count > 1343) then
-		[physicalSP - 2] = -1;
-		ireturn;
-	endif;
-
-//______________________________________Copying data from parent to child________________________
-	alias counter_2 S11;
-	counter_2 = 0;
+//For each valid page of the parent process, its contents needs to be copied word-by-word to the corresponding free page allocated. 
+	alias counter S8;
+	counter = 0;
 	count = 0;
 	while(count < 4) do
-		counter_2 = 0;
+		counter = 0;
 		if([PTBR + 2*count] != -1) then
-			while(counter_2 < 512) do
-				[([1024 + 8*npid + 2*count])*512 + counter_2] = [([PTBR + 2*count])*512 + counter_2];
-				counter_2 = counter_2 + 1;
+			while(counter < 512) do
+				[([1024 + 8 * new_pid + 2 * count]) * 512 + counter] = [([PTBR + 2 * count]) * 512 + counter];
+				counter = counter + 1;
 			endwhile;
 		endif;
 		count = count + 1;
 	endwhile;	
 
-//__________________________________Updating Auxilary information of child process___________________________
-
+//Copying the auxilry information.
 	count = 0;
 	while (count < 4) do
-		[1024 + 8*npid + 2*count + 1] = [PTBR + 2*count + 1];
+		[1024 + 8 * new_pid + 2 * count + 1] = [PTBR + 2 * count + 1];
 		if ([PTBR + 2*count] == -1) then
-			[1024 + 8*npid + 2*count] = -1;
+			[1024 + 8*new_pid + 2*count] = -1;
 		endif;
 		count = count + 1;
 	endwhile;
-	
-	[READY_LIST + 32*npid + 5] = (1024 + 8*npid);	//setting value of PTBR
-	[READY_LIST + 32*npid + 4] = [physicalSP];		//setting value of IP
-	[READY_LIST + 32*npid + 3] = SP - 1;			//setting value of SP
-	[READY_LIST + 32*npid + 2] = BP;				//setting value of BP
-	[READY_LIST + 32*npid + 6] = 4;					//setting value of PTLR
-	
-	[READY_LIST + 32*npid + 7] = R0;
-	[READY_LIST + 32*npid + 8] = R1;
-	[READY_LIST + 32*npid + 9] = R2;
-	[READY_LIST + 32*npid + 10] = R3;
-	[READY_LIST + 32*npid + 11] = R4;
-	[READY_LIST + 32*npid + 12] = R5;
-	[READY_LIST + 32*npid + 13] = R6;
-	[READY_LIST + 32*npid + 14] = R7;
+	//The page table of the current process must be copied to the page table of the child process.
+	[READY_LIST + 32 * new_pid + 2] = BP;				//BP
+	[READY_LIST + 32 * new_pid + 3] = SP - 1;			//SP
+	[READY_LIST + 32 * new_pid + 4] = [physical_stack_ptr];		//IP
+	[READY_LIST + 32 * new_pid + 5] = (1024 + 8 * new_pid);	//PTBR
+	[READY_LIST + 32 * new_pid + 6] = 4;		//PTLR
+	// Machine Registers
+	[READY_LIST + 32 * new_pid + 7] = R0;
+	[READY_LIST + 32 * new_pid + 8] = R1;
+	[READY_LIST + 32 * new_pid + 9] = R2;
+	[READY_LIST + 32 * new_pid + 10] = R3;
+	[READY_LIST + 32 * new_pid + 11] = R4;
+	[READY_LIST + 32 * new_pid + 12] = R5;
+	[READY_LIST + 32 * new_pid + 13] = R6;
+	[READY_LIST + 32 * new_pid + 14] = R7;
 
 	count = 0;
 
-	alias pid S7;
-	pid = (PTBR-1024)/8;
-	alias fEntry S8;
 
-//______________________Copying process file table from parent to child_____________________
+	alias cur_pid S9;
+	cur_pid = (PTBR - 1024) / 8;
+	alias free_entry S10;
 
+
+//The Per-Process Open File table of the parent process is copied to child's PCB. For each entry in the per-process open file table, increment the File Open Count for the file's entry in the system-wide open file table. The per-process open file table has a field which points to that file's entry in the system wide open file table.
 	while (count < 8) do
-		if ([READY_LIST + 32*pid + 15 + 2*count] != -1) then
-			fEntry = [READY_LIST + 32*pid + 15 + 2*count];
-			if ([FILE_TABLE + 2*fEntry] == -1) then
-				[physicalSP - 2] =-1;
-				ireturn;
-			endif;
-			[FILE_TABLE + 2*fEntry + 1] = [FILE_TABLE + 2*fEntry + 1] + 1;
+		if ([READY_LIST + 32*cur_pid + 15 + 2*count] != -1) then
+			free_entry = [READY_LIST + 32*cur_pid + 15 + 2*count];
+
+			[FILE_TABLE + 2 * free_entry + 1] = [FILE_TABLE + 2 * free_entry + 1] + 1;
 		endif;
-		[READY_LIST + 32*npid + 15 + 2*count] = [READY_LIST + 32*pid + 15 + 2*count];
-		[READY_LIST + 32*npid + 15 + 2*count + 1] = [READY_LIST + 32*pid + 15 + 2*count + 1];
+		[READY_LIST + 32 * new_pid + 15 + 2 * count] = [READY_LIST + 32 * cur_pid + 15 + 2 * count];
+		[READY_LIST + 32 * new_pid + 15 + 2 * count + 1] = [READY_LIST + 32 * cur_pid + 15 + 2 * count + 1];
 		count = count + 1;
 	endwhile;
 
-	[READY_LIST + 32*npid + 1] = 1;
-	[READY_LIST + 32*npid + 31] = pid;
-	[physicalSP - 2] = npid;
-	
-	alias newphysicalSP S9;
-	newphysicalSP = ([(1024 + 8*npid) + 2 * ((SP-1) / 512)] * 512) + ((SP-1) % 512);
-	[newphysicalSP - 1] = -2;
-	//print ("End of fork");
+	[READY_LIST + 32*new_pid + 1] = 1;
+
+
+//The PID for the child process obtained in Step 2, is stored in the return value space of the stack of the parent process. The address of the return value space is parent's physical_stack_ptr - 2.
+
+	[physical_stack_ptr - 2] = new_pid;
+
+//The value -2 is stored in the return value space of the stack of the child process. The physical address of SP of child process must be calculated using PTBR of child process and SP of child process.	
+
+	alias new_physical_stack_ptr S11;
+	new_physical_stack_ptr = ([(1024 + 8*new_pid) + 2 * ((SP - 1) / 512)] * 512) + ((SP - 1) % 512);
+	[new_physical_stack_ptr - 1] = -2;
+
 
 	ireturn;
 

@@ -1,7 +1,8 @@
 //Author : Jayaprakash
 // Stage 9 : INT 5 code
 // Fork
-	print("entered1");
+
+
 alias physical_stack_ptr S0;
 physical_stack_ptr = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
 
@@ -10,10 +11,12 @@ sysCallNo = [physical_stack_ptr - 1];
 
 if (sysCallNo == 8) then
 	alias free_pcb S2;
-	print("entered2");
+
+
 //Find a free PCB in the Ready List of PCBs. A free PCB is indicated with STATE 0 (initially STATEs of all PCBs will be set to 0. Also, upon termination of a process, the STATE will be set to 0. 
-	free_pcb = 1;
-print("entered3");
+	free_pcb = 0;
+
+
 	while (free_pcb < 32) do
 		if ([READY_LIST + 32 * free_pcb + 1] == 0) then
 			break;
@@ -32,7 +35,8 @@ print("entered3");
 	new_pid = free_pcb;
 //Set the PID field of the PCB of the child process with the value obtained in Step 2, i.e. the index within the ready list. In XOS, this value is considered to be the PID or Process Identifier for the child process.	
 	[READY_LIST + 32 * new_pid ] = new_pid; 	
-print("entered4");
+
+
 
 	alias valid_pages S4;
 	valid_pages = 0;
@@ -53,11 +57,13 @@ print("entered4");
 	count_free_pages = 0;
 	count = 0;
 	while (count < 64) do
-		if ([count + 1280] == 0) then
-			count_free_pages = count_free_pages + 1;
-		endif;
 		if (count_free_pages == valid_pages) then
 			break;
+		endif;
+		if ([count + MEM_LIST] == 0) then
+			count_free_pages = count_free_pages + 1;
+
+		
 		endif;
 		count = count + 1;
 	endwhile;
@@ -72,7 +78,7 @@ print("entered4");
 	count = 0;
 	alias index S7;
 	index = 0;
-	while (valid_pages > 0) do
+	while (valid_pages > 0 && count< 64) do
 		if ([count + 1280] == 0 ) then
 			while ([PTBR + index] == -1) do
 				index = index + 2;
@@ -103,7 +109,7 @@ print("entered4");
 //Copying the auxilry information.
 	count = 0;
 	while (count < 4) do
-		[1024 + 8*new_pid + 2*count + 1] = [PTBR + 2*count + 1];
+		[1024 + 8 * new_pid + 2 * count + 1] = [PTBR + 2 * count + 1];
 		if ([PTBR + 2*count] == -1) then
 			[1024 + 8*new_pid + 2*count] = -1;
 		endif;
@@ -114,7 +120,7 @@ print("entered4");
 	[READY_LIST + 32 * new_pid + 3] = SP - 1;			//SP
 	[READY_LIST + 32 * new_pid + 4] = [physical_stack_ptr];		//IP
 	[READY_LIST + 32 * new_pid + 5] = (1024 + 8 * new_pid);	//PTBR
-	[READY_LIST + 32 * new_pid + 6] = PTLR;		//PTLR
+	[READY_LIST + 32 * new_pid + 6] = 4;		//PTLR
 	// Machine Registers
 	[READY_LIST + 32 * new_pid + 7] = R0;
 	[READY_LIST + 32 * new_pid + 8] = R1;
@@ -126,7 +132,8 @@ print("entered4");
 	[READY_LIST + 32 * new_pid + 14] = R7;
 
 	count = 0;
-print("entered5");
+
+
 	alias cur_pid S9;
 	cur_pid = (PTBR - 1024) / 8;
 	alias free_entry S10;
@@ -136,10 +143,7 @@ print("entered5");
 	while (count < 8) do
 		if ([READY_LIST + 32*cur_pid + 15 + 2*count] != -1) then
 			free_entry = [READY_LIST + 32*cur_pid + 15 + 2*count];
-			if ([FILE_TABLE + 2 * free_entry] == -1) then
-				[physical_stack_ptr - 2] =-1;
-				ireturn;
-			endif;
+
 			[FILE_TABLE + 2 * free_entry + 1] = [FILE_TABLE + 2 * free_entry + 1] + 1;
 		endif;
 		[READY_LIST + 32 * new_pid + 15 + 2 * count] = [READY_LIST + 32 * cur_pid + 15 + 2 * count];
@@ -160,7 +164,7 @@ print("entered5");
 	new_physical_stack_ptr = ([(1024 + 8*new_pid) + 2 * ((SP - 1) / 512)] * 512) + ((SP - 1) % 512);
 	[new_physical_stack_ptr - 1] = -2;
 
-print("entered6");
+
 	ireturn;
 
 endif;

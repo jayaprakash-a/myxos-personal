@@ -76,7 +76,7 @@ load(22,16);
 load(23,17);     //loading interrupt rountine for interrupt 7
 load(24,18);
 
-counter = READY_LIST;
+counter = READY_LIST + 32;
 
 
 

@@ -80,7 +80,7 @@ if (sys_call_no == 9) then
 			index = index - 1;
 		endwhile;
 	endif;
-//If the current process has more code pages than the code blocks of the new program, deallocate them by setting memory free list entries to 0 (unused). Also set the physical page number field of the excess pages to -1 and auxiliary information as "00" in the page table of the current process.
+//If more pages are required to load the new process, allocate them by searching the memory free list. If enough free pages are not available, return with -1 indicating error. Otherwise, update the memory free list and update the page table entries. Note that auxiliary information of the newly allocated pages must be set to "01" (not referenced and valid). 
 	if (code_pages < code_blocks) then
 		index = 0;
 		diff_count = code_blocks - code_pages;
@@ -184,6 +184,7 @@ if (sys_call_no == 9) then
 	
 endif;
 
+//GEt pid
 
 if (sys_call_no == 11) then
 //The interrupt 6 routine for Exec system call must be modified to obtain the system call number and take actions according for getting pid of the process, if system call number is 11. The Getpid system call implementation can use the value of PTBR to compute PID as described in the previous stages. This value should be returned to the user program. 
@@ -206,6 +207,7 @@ if (sys_call_no == 11) then
 
 endif;
 
+//GET PPID 
 
 if (sys_call_no == 12) then
 	alias pid S2;
