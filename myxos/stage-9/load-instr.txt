@@ -1,5 +1,6 @@
 load --os ./../stage-9/os_startup.xsm
-load --init ./../stage-9/
+load --init ./../stage-9/menu.xsm
+load --exec ./../stage-9/even.xsm
 load --int=1 ./../stage-9/int1.xsm
 load --int=2 ./../stage-9/int2.xsm
 load --int=3 ./../stage-9/int3.xsm
@@ -12,5 +13,12 @@ load --int=7 ./../stage-9/int7.xsm
 
 
 ./spl --os ./../stage-9/startup.spl
-./spl --init ./../stage-9/
+./spl --int=5 ./../stage-9/int5.spl
+./spl --int=6 ./../stage-9/int6.spl
+./spl --int=7 ./../stage-9/int7.spl
+
+
+./apl ./../stage-9/fork-test.apl
+./apl ./../stage-9/menu.apl
+
 

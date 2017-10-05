@@ -2,8 +2,21 @@ integer main()
 {
 	integer pid;
 	integer s;
-	s = Exec("even.xsm");
-	
+	pid = 0;
+	while (pid != -1) do
+		if (pid == -2) then
+			print ("Child");
+			s = Exec("even.xsm");
+			break;
+		endif;
+		if (pid >= 0 && pid < 32) then
+			pid = Fork();
+			print (pid);
+			print ("parent");
+		endif;
+	endwhile;
+
+	print ("After Fork");
 		
 	return 0;
 }
