@@ -12,10 +12,10 @@ load --int=timer ./../stage-11/timer.xsm
 
 
 
-./spl --os ./../stage-11/startup.spl
-./spl --int=5 ./../stage-11/int5.spl
-./spl --int=6 ./../stage-11/int6.spl
-./spl --int=7 ./../stage-11/int7.spl
+./spl --os ./../stage-9/startup.spl
+./spl --int=5 ./../stage-9/int5.spl
+./spl --int=6 ./../stage-9/int6.spl
+./spl --int=7 ./../stage-9/int7.spl
 
 
 ./apl ./../stage-9/fork-test.apl

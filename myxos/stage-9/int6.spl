@@ -4,7 +4,6 @@ physical_stack_ptr = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
 alias sys_call_no S1;
 sys_call_no = [physical_stack_ptr - 1];
 
-//Fork: used to load and run a new process in the space of a currently running process. The current process is overwritten by new process i.e. the process data structures and memory of the current process is used by the new process. 
 
 if (sys_call_no == 9) then
 	

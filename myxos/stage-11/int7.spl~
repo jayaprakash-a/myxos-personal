@@ -113,7 +113,7 @@ if (sysCallNo == 14) then
 	endwhile;
 
 	[physical_stack_ptr - 2] = 0;
-
+	print("Signal end");
 	ireturn;
 
 endif;	
@@ -122,7 +122,7 @@ endif;
 
 
 if (sysCallNo == 13) then
-
+	print("wait enter");
 	alias waiting_pid S2;
 	waiting_pid = [physical_stack_ptr - 3];
 	
