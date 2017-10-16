@@ -12,9 +12,10 @@ if (sysCallNo == 10) then
 
 	alias ready_process S2;
 	ready_process = 0;
-
+	alias pid S3;
+	pid = (PTBR - 1024)/8;
 	while (ready_process < 1024) do
-		if ([READY_LIST + ready_process + 1] > 101) then
+		if ([READY_LIST + ready_process + 1] > (100 + pid)) then
 			[READY_LIST + ready_process + 1] = 1;
 		endif;
 		ready_process = ready_process + 32;
@@ -32,8 +33,7 @@ if (sysCallNo == 10) then
 		halt;
 	endif;
 	//Find the PCB of the current process. Traverse through the Ready List of PCBs to find the PCB with STATE set as running. As noted earlier, this can be calculated from the value of PTBR. 
-	alias pid S3;
-	pid = (PTBR - 1024)/8;
+	
 	//Close all open instances of files by the process as done for Close system call.
 	alias counter S4;
 	counter = 15;
@@ -61,6 +61,8 @@ if (sysCallNo == 10) then
 		endif;
 		counter = counter + 2;
 	endwhile;
+	print("ready");
+	print(ready_process);
 //Invalidate all entries in its per-process page table. To do this, set Address field to -1 and the Valid/Invalid bit in the auxiliary information to "00". This indicates that the page table entry is not referenced and invalid.
 	[PTBR + 0] = -1;
 	[PTBR + 1] = "00";
@@ -70,27 +72,29 @@ if (sysCallNo == 10) then
 	[PTBR + 5] = "00";
 	[PTBR + 6] = -1;
 	[PTBR + 7] = "00";
+	alias ready_index S8;
+	ready_index = READY_LIST + ready_process;
 //Schedule this process for execution by loading the registers from the PCB as done in Stage 6 for the timer interrupt routine. 
-	[READY_LIST + ready_process + 1] = 2;
+	[ready_index + 1] = 2;
 
-	BP = [READY_LIST + ready_process + 2];
-	SP = [READY_LIST + ready_process + 3];
-	PTBR = [READY_LIST + ready_process + 5];
-	PTLR = [READY_LIST + ready_process + 6];
-	R0 = [READY_LIST + ready_process + 7];
-	R1 = [READY_LIST + ready_process + 8];
-	R2 = [READY_LIST + ready_process + 9];
-	R3 = [READY_LIST + ready_process + 10];
-	R4 = [READY_LIST + ready_process + 11];
-	R5 = [READY_LIST + ready_process + 12];
-	R6 = [READY_LIST + ready_process + 13];
-	R7 = [READY_LIST + ready_process + 14];
+	BP = [ready_index + 2];
+	SP = [ready_index + 3];
+	PTBR = [ready_index + 5];
+	PTLR = [ready_index + 6];
+	R0 = [ready_index + 7];
+	R1 = [ready_index + 8];
+	R2 = [ready_index + 9];
+	R3 = [ready_index + 10];
+	R4 = [ready_index + 11];
+	R5 = [ready_index + 12];
+	R6 = [ready_index + 13];
+	R7 = [ready_index + 14];
 
 //Get the IP from its PCB and store it in top of the stack (Compute physical address of its SP)	
 	SP = SP + 1;
 	alias new_physical_stack_ptr S7;
 	new_physical_stack_ptr = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
-	[new_physical_stack_ptr] = [ READY_LIST + ready_process + 4 ];
+	[new_physical_stack_ptr] = [ ready_index + 4 ];
 
 	ireturn;
 
@@ -139,12 +143,25 @@ if (sysCallNo == 13) then
 	
 	alias pid S4;
 	pid = (PTBR - 1024)/8;
+	alias ready_index S5;
+	ready_index = READY_LIST + 32 * pid;
 	//The STATE field in the PCB of the current process must indicate that it is waiting for a process with the given PID. Change the STATE field in the PCB of the current process to 100 + WaitingPID. 
-	[READY_LIST + 32  * pid + 1] = 100 + waiting_pid;
+	[ready_index+ 1] = 100 + waiting_pid;
+	[ready_index + 2] = BP;
+	[ready_index + 3] = SP - 1;
+	[ready_index + 4] = [physical_stack_ptr];
+	[ready_index + 5] = PTBR;
+	[ready_index + 6] = PTLR;
+	[ready_index + 7] = R0;
+	[ready_index + 8] = R1;
+	[ready_index + 9] = R2;
+	[ready_index + 10] = R3;
+	[ready_index + 11] = R4;
+	[ready_index + 12] = R5;
+	[ready_index + 13] = R6;
+	[ready_index + 14] = R7;
 
-	[READY_LIST + 32 * pid + 4] = [physical_stack_ptr];
-
-	alias ready_process S5;
+	alias ready_process S6;
 	ready_process = 0;
 	//. Since this process has switched into waiting mode, another process must be scheduled for execution. To do this, scheduler must be implemented to schedule the next ready process.
 	while (ready_process < 1024) do
@@ -157,25 +174,25 @@ if (sysCallNo == 13) then
 	if (ready_process >= 1024) then
 		halt;
 	endif;
+	ready_index = ready_index;
+	[ready_index + 1] = 2;
 
-	[READY_LIST + ready_process + 1] = 2;
-
-	BP = [READY_LIST + ready_process + 2];
-	SP = [READY_LIST + ready_process + 3];
-	PTBR = [READY_LIST + ready_process + 5];
-	PTLR = [READY_LIST + ready_process + 6];
-	R0 = [ READY_LIST + ready_process + 7];
-	R1 = [ READY_LIST + ready_process + 8];
-	R2 = [ READY_LIST + ready_process + 9];
-	R3 = [ READY_LIST + ready_process + 10];
-	R4 = [ READY_LIST + ready_process + 11];
-	R5 = [ READY_LIST + ready_process + 12];
-	R6 = [ READY_LIST + ready_process + 13];
-	R7 = [ READY_LIST + ready_process + 14];
+	BP = [ready_index + 2];
+	SP = [ready_index + 3];
+	PTBR = [ready_index + 5];
+	PTLR = [ready_index + 6];
+	R0 = [ ready_index + 7];
+	R1 = [ ready_index + 8];
+	R2 = [ ready_index + 9];
+	R3 = [ ready_index + 10];
+	R4 = [ ready_index + 11];
+	R5 = [ ready_index + 12];
+	R6 = [ ready_index + 13];
+	R7 = [ ready_index + 14];
 	SP = SP + 1;
-	alias new_physical_stack_ptr S6;
+	alias new_physical_stack_ptr S7;
 	new_physical_stack_ptr = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
-	[new_physical_stack_ptr] = [READY_LIST + ready_process + 4];
+	[new_physical_stack_ptr] = [ready_index + 4];
 	
 	[physical_stack_ptr - 2] = 0;
 	print("wait end");
