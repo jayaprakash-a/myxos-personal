@@ -12,10 +12,12 @@ if (sysCallNo == 10) then
 
 	alias ready_process S2;
 	ready_process = 0;
+	//Find the PCB of the current process. Traverse through the Ready List of PCBs to find the PCB with STATE set as running. As noted earlier, this can be calculated from the value of PTBR. 
+
 	alias pid S3;
 	pid = (PTBR - 1024)/8;
 	while (ready_process < 1024) do
-		if ([READY_LIST + ready_process + 1] > (100 + pid)) then
+		if ([READY_LIST + ready_process + 1] == (100 + pid)) then
 			[READY_LIST + ready_process + 1] = 1;
 		endif;
 		ready_process = ready_process + 32;
@@ -32,10 +34,23 @@ if (sysCallNo == 10) then
 	if (ready_process >= 1024 ) then
 		halt;
 	endif;
-	//Find the PCB of the current process. Traverse through the Ready List of PCBs to find the PCB with STATE set as running. As noted earlier, this can be calculated from the value of PTBR. 
 	
-	//Close all open instances of files by the process as done for Close system call.
 	alias counter S4;
+	alias physical_page S6;
+	physical_page = 0;
+	counter = 0;
+	while (counter < 8) do
+		if ([PTBR + counter] != -1) then
+			physical_page = [PTBR + counter];
+			[1280 + physical_page] = 0;
+		endif;
+		counter = counter + 2;
+	endwhile;
+	print("ready");
+	print(ready_process);
+
+	//Close all open instances of files by the process as done for Close system call.
+
 	counter = 15;
 	while (counter < 30) do
 		if ([READY_LIST + 32 * pid + counter] != -1) then
@@ -51,18 +66,7 @@ if (sysCallNo == 10) then
 //Set the STATE in the PCB to 0. This indicates that the process has terminated. 
 	[READY_LIST + 32 * pid + 1] = 0;
 //The entries of pages occupied by this process in the memory free list must decremented to 0, indicating unused. This is done by checking the per-process page table of the process. 
-	alias physical_page S6;
-	physical_page = 0;
-	counter = 0;
-	while (counter < 8) do
-		if ([PTBR + counter] != -1) then
-			physical_page = [PTBR + counter];
-			[1280 + physical_page] = 0;
-		endif;
-		counter = counter + 2;
-	endwhile;
-	print("ready");
-	print(ready_process);
+	
 //Invalidate all entries in its per-process page table. To do this, set Address field to -1 and the Valid/Invalid bit in the auxiliary information to "00". This indicates that the page table entry is not referenced and invalid.
 	[PTBR + 0] = -1;
 	[PTBR + 1] = "00";
@@ -105,12 +109,11 @@ endif;
 if (sysCallNo == 14) then
 	alias pid S2;
 	pid = (PTBR - 1024)/8;
-	pid = pid + 100;
 	alias index S3;
 	index = 0;
 	
 	while (index < 1024) do
-		if ([READY_LIST + index + 1] == pid) then
+		if ([READY_LIST + index + 1] == pid + 100) then
 			[READY_LIST + index + 1] = 1;
 		endif;
 		index = index + 32;
@@ -146,7 +149,7 @@ if (sysCallNo == 13) then
 	alias ready_index S5;
 	ready_index = READY_LIST + 32 * pid;
 	//The STATE field in the PCB of the current process must indicate that it is waiting for a process with the given PID. Change the STATE field in the PCB of the current process to 100 + WaitingPID. 
-	[ready_index+ 1] = 100 + waiting_pid;
+	[ready_index + 1] = 100 + waiting_pid;
 	[ready_index + 2] = BP;
 	[ready_index + 3] = SP - 1;
 	[ready_index + 4] = [physical_stack_ptr];
@@ -170,13 +173,10 @@ if (sysCallNo == 13) then
 		endif;
 		ready_process = ready_process + 32;
 	endwhile;
-	print("wait halt");
-	if (ready_process >= 1024) then
-		halt;
-	endif;
-	ready_index = ready_index;
+	print("wait schedule");
+	
+	ready_index = READY_LIST + ready_process;
 	[ready_index + 1] = 2;
-
 	BP = [ready_index + 2];
 	SP = [ready_index + 3];
 	PTBR = [ready_index + 5];
