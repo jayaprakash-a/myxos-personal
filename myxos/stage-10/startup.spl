@@ -1,0 +1,121 @@
+//Author : Jayaprakash
+// Stage 10 : OS startup code
+// Process System Calls
+
+
+load(7,1);//loading exhandler
+load(8,2);//loading exhandler
+
+[READY_LIST + 0] = 0;	// Sets entry for PID = 0
+
+// Setting up page table for 1st process
+PTBR = 1024; 
+PTLR = 4; 
+[PTBR + 0] = 21;		
+[PTBR + 1] = "00";		
+[PTBR + 2] = 22;
+[PTBR + 3] = "00";
+[PTBR + 4] = 23;
+[PTBR + 5] = "00";
+[PTBR + 6] = 25;
+[PTBR + 7] = "01";
+
+alias pid S0;
+pid = (PTBR - 1024)/8;
+
+alias count S1;
+count = 15;
+alias index S2;
+index = READY_LIST + 32 * pid + 15;
+while (count < 31) do
+	[index] = -1;
+	count = count + 1;
+	index = index + 1;
+endwhile;
+
+
+load (9, 3);//loading timer interrupt 
+load (10, 4);//loading timer interrupt 
+
+
+load (5, 19);			//loading fat
+load (6, 20);			//load dfs 
+
+
+// Initialising the parent process ppid and state.
+[READY_LIST + 31] = 0;
+[READY_LIST + 1] = 2;
+
+
+
+
+SP = 1536; //stack pointer
+[28 * 512] = 0;
+
+//initialising SYSTEM WIDE OPEN FILE TABLE entires
+
+count = 0;
+index = FILE_TABLE + count;	
+while (count < 128) do
+	[index] = -1;
+	[index + 1] = 0;
+	count = count + 2;
+	index = index + 2;
+endwhile;
+
+load (11, 5);			
+load (12, 6);	//interrupt 1
+
+load (13, 7);    
+load (14, 8);	//interrupt 2
+
+load (15, 9);
+load (16,10);	//interrupt 3
+
+load (17,11);
+load (18,12);	//interrupt 4
+
+load (19,13);
+load (20,14);	//interrupt 5
+
+load (21,15);	
+load (22,16);	//interrupt 6
+
+load (23,17);
+load (24,18);	//interrupt 7
+
+count = 1280;
+
+
+//Memory free list initialisation 
+
+while(count < 1306) do
+	[count] = 1;
+	count = count + 1;
+endwhile; 
+while(count < 1344) do
+	[count] = 0;
+	count = count + 1;
+endwhile;
+
+
+counter = READY_LIST + 32;
+
+//Initialize all PCBs with STATE field 0. This will be necessary to search for a free PCB in memory. A free PCB in XOS is indicated by STATE 0 (terminated or free) in its PCB. 
+while(count < READY_LIST + 1024) do
+	[count + 1] = 0;
+	count = count + 32;
+endwhile; 
+
+
+//clearing swap area of disk free list
+index = 3520;
+
+while (index < 3584) do
+	[index] = 0;
+	index = index + 1;
+endwhile;
+store (6, 20);
+
+
+ireturn

@@ -1,0 +1,24 @@
+load --os ./../stage-11/os_startup.xsm
+load --init ./../stage-11/wait.xsm
+load --exec ./../stage-11/even.xsm
+load --int=1 ./../stage-11/int1.xsm
+load --int=2 ./../stage-11/int2.xsm
+load --int=3 ./../stage-11/int3.xsm
+load --int=4 ./../stage-11/int4.xsm
+load --int=5 ./../stage-11/int5.xsm
+load --int=6 ./../stage-11/int6.xsm
+load --int=7 ./../stage-11/int7.xsm
+load --int=timer ./../stage-11/timer.xsm
+
+
+
+./spl --os ./../stage-11/startup.spl
+./spl --int=5 ./../stage-11/int5.spl
+./spl --int=6 ./../stage-11/int6.spl
+./spl --int=7 ./../stage-11/int7.spl
+
+
+./apl ./../stage-9/fork-test.apl
+./apl ./../stage-9/menu.apl
+
+

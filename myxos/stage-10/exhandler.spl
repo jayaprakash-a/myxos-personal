@@ -1,0 +1,133 @@
+//Author : Jayaprakash
+// Stage 10 : Exception handler
+// Process System Calls
+
+alias Cause S0;
+alias BadVAddr S1;
+alias value_of_IP S2;
+
+Cause = (EFR % 10);  // Gets value of cause field (size 1 char)
+BadVAddr = ((EFR/10)%100);  // Gets value of BadVAddr 
+value_of_IP = (EFR/1000);   //Gets value of IP at the point of exception
+
+
+//JMP 11776 Jumps to Interrupt 7(512 * 23)
+//If Cause is a value other than 0, it means that it is not a page fault. In this case, display the cause of the error according to the value in the Cause bit and exit the process which caused the exception.
+if (Cause == 1) then
+	print ("Illegal instruction");
+else if (Cause == 2) then
+		print ("Illegal memory access");
+	else if (Cause == 3) then
+			print ("Arithmetic exception");
+		else if (Cause == 4) then
+				print ("Illegal operands");
+			endif;
+		endif;
+	endif;
+endif;
+
+if(Cause != 0) then
+	inline "JMP 11776";
+endif;
+
+// If Cause is 0 indicating a Page Fault, the following actions have to be performed. 
+
+if (Cause == 0) then
+	print ("Page Fault");
+	//If the Physical Page Number field of the Per-Process Page Table corresponding to the VPagenum is -1, indicating that a reference to an invalid address was made by the user, the currently running process is made to exit
+	if ([ PTBR + ( 2 * BadVAddr )] == -1) then
+		print ("Invalid address");
+		inline "JMP 11776";
+	endif;
+
+
+	alias free_page S3;
+	free_page = MEM_LIST;
+	while (free_page < 1344) do
+		if ([free_page] == 0) then
+			[free_page] = 1;
+			break;
+		endif;
+		free_page = free_page + 1;
+	endwhile;
+
+	alias index S4;
+	alias pid S5;
+	alias index_loop S6;
+	alias victim_page S7;
+	alias free_block S8;
+
+//If a free page is not found, follow the page replacement technique like the Second Chance Algorithm to find a free page. The page replacement technique is explained in detail below.
+	if(free_page >= 1344) then
+		print ("PageReplace");
+		index = 0;
+		free_block = DISK_LIST;
+		pid = (PTBR-1024)/8;
+		while (1 == 1) do
+			index = 0;
+//The scanning starts from the current page table entry which issued a page fault.
+//The 4th entry in each page table is for stack and it needs to be present in the memory always. Hence the 4th entry of the page table is skipped in this search and will NOT be selected for replacement.
+			while (index < 3) do
+				index_loop = 1024 + (8*pid) + (2*index);
+//Whenever a page with reference bit 1 is encountered it is set to 0 and goes to the next page
+				if ([index_loop] != -1 ) then
+					if ([index_loop + 1] == "11") then
+						[index_loop + 1] = "01";
+						index = index + 1;
+						index_loop = index_loop + 2;		
+						continue;
+					endif;
+					index_loop = 1024 + (8*pid) + (2*index);
+//When a page with reference bit 0 is encountered, it is selected as the victim page
+					if ([index_loop + 1] == "01" ) then
+						victim_page = [index_loop];
+						while (free_block < 3584) do
+							if ([free_block] == 0) then
+								[free_block] = 1;
+								store (victim_page , (free_block-DISK_LIST));						
+								break;
+							endif;
+							free_block = free_block + 1;
+						endwhile;
+						if (free_block > 3583) then
+							inline "JMP 11776";
+						endif;
+						[index_loop] = (free_block - DISK_LIST);
+						[index_loop + 1] = "10";
+						free_page = victim_page;
+						break;
+					endif;
+				endif;
+				index = index + 1;
+			endwhile;
+			pid = pid + 1;
+			if (pid > 31) then
+				pid = 0;
+			endif;
+			if (free_page != 0) then
+				break;
+			endif;
+		endwhile;
+		print ("PageREnd");
+	endif;
+	alias disk_block S9;
+	index = PTBR + (2 * BadVAddr);
+	disk_block = [index];
+	if (disk_block > 20) then
+		load (free_page, disk_block);
+		if (disk_block >= 448) then
+			[disk_block + DISK_LIST] = [disk_block + DISK_LIST] - 1;
+		endif;
+	endif;
+	[index] = free_page;
+	[index + 1] = "11";
+	SP = SP + 1;
+	alias physical_stack_ptr S10;
+	physical_stack_ptr = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
+	[physical_stack_ptr] = value_of_IP;
+	ireturn;
+endif;
+
+halt;
+
+	
