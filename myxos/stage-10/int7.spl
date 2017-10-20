@@ -37,12 +37,18 @@ if (sysCallNo == 10) then
 	
 	alias counter S4;
 	alias physical_page S6;
+	alias counter_index S9;
 	physical_page = 0;
 	counter = 0;
 	while (counter < 8) do
-		if ([PTBR + counter] != -1) then
-			physical_page = [PTBR + counter];
-			[1280 + physical_page] = 0;
+		counter_index = PTBR + counter;
+		if ([counter_index] != -1) then
+			if ([counter_index] >= 448) then
+				[DISK_LIST + [counter_index]] = [DISK_LIST + [counter_index]] - 1;
+			endif;
+			if ([PTBR + counter + 1] == "01" || [PTBR + counter + 1] == "11") then
+				[MEM_LIST + [counter_index]] = [MEM_LIST + [counter_index]] - 1;
+			endif;
 		endif;
 		counter = counter + 2;
 	endwhile;

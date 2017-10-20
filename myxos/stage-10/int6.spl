@@ -32,122 +32,50 @@ if (sys_call_no == 9) then
 		[physical_stack_ptr - 2] = -1;
 		ireturn;
 	endif;
-//Count the number of code blocks of the new program. 
-	load (1, basic_block);
-	alias code_blocks S5;
-	code_blocks = 0;
-	
-	alias counter S6;
+
+
+	alias counter S4;
 	counter = 0;
-	while (counter < 256) do
-		if([counter + 512] != 0) then
-			code_blocks = code_blocks + 1;
+	alias counter_index S5;
+
+	while (counter < 6) do
+		counter_index = PTBR + counter;
+		if ([counter_index] >= 448) then
+			if ([counter_index + 1] == "00") then			
+				[DISK_LIST + [counter_index]] = [DISK_LIST + [counter_index]] - 1;
+			endif;
+			if ([PTBR + counter + 1] == "01" || [PTBR + counter + 1] == "11") then
+				[MEM_LIST + [counter_index]] = [MEM_LIST + [counter_index]] - 1;
+			endif;
 		endif;
+		counter = counter + 2;
+	endwhile;
+
+	load (1, basicblock);
+	counter = 512;
+	counter_index = 0;
+	while (counter < 768) do
+		if (counter_index == 3) then
+			break;
+		endif;
+		index = PTBR + 2 * counter_index;
+		if ([counter] != -1) then
+			[index + 1] = "00";
+			[index] = [counter];			
+			counter_index = counter_index + 1
+		endif;		
 		counter = counter + 1;
 	endwhile;
-// Also Count the number of code pages of the new program. 	
-	alias code_pages S7;
-	code_pages = 0;
-	index = 0;
-	
-	while (index <= 4) do
-		if ([PTBR + 2 * index] != -1) then
-			code_pages = code_pages + 1;
-		endif;
-		index = index + 1;
+
+	[PTBR + 7] = "01";
+
+	while (counter_index <= 2) do
+		index = PTBR + 2 * counter_index;
+		[index] = -1;
+		[index + 1] = "00";
+		counter_index = counter_index + 1;	
 	endwhile;
-	
 
-//If the current process has more code pages than the code blocks of the new program, deallocate them by setting memory free list entries to 0 (unused). Also set the physical page number field of the excess pages to -1 and auxiliary information as "00" in the page table of the current process.	
-	alias diff_count S8;
-	if (code_pages > code_blocks) then
-		diff_count = code_pages-code_blocks;
-		index = 2;
-		while (index >= 0) do
-			counter = PTBR + 2 *index;
-			if([counter] != -1) then
-
-				[counter] = -1;
-				[counter + 1] = "00";
-				[[counter] + 1280] = 0;
-				diff_count = diff_count - 1;
-			endif;
-			
-			if (diff_count == 0) then
-				break;
-			endif;
-			index = index - 1;
-		endwhile;
-	endif;
-//If more pages are required to load the new process, allocate them by searching the memory free list. If enough free pages are not available, return with -1 indicating error. Otherwise, update the memory free list and update the page table entries. Note that auxiliary information of the newly allocated pages must be set to "01" (not referenced and valid). 
-	if (code_pages < code_blocks) then
-		index = 0;
-		diff_count = code_blocks - code_pages;
-		counter = 0;
-
-		while (index < 64) do
-			if ([index + 1280] == 0) then
-				counter = counter + 1;
-			endif;
-			if (counter == diff_count) then
-				break;
-			endif;
-			index = index + 1;
-		endwhile;
-	
-		if (counter != diff_count) then
-			[physical_stack_ptr - 2] = -1;			
-			ireturn;
-		endif;
-
-		counter = 0;
-		index = 0;
-		while (counter <= 4) do
-			if([PTBR + 2*counter] == -1) then
-				while (index < 64) do
-					if([index + 1280] == 0) then
-						break;
-					endif;
-					index = index + 1;
-				endwhile;
-
-				if (index >= 64) then
-					[physical_stack_ptr - 2] = -1;					
-					ireturn;
-				endif;
-	
-				[index + 1280] = 1;
-				[PTBR + 2 * counter] = index;
-				[PTBR + 2 * counter + 1] = "01";
-				index = index + 1;			
-			endif;
-
-			if (code_blocks ==  counter + 1) then
-				break;
-			endif;
-			counter = counter + 1;
-		endwhile;
-
-	endif;
-
-	
-
-	index = 512;
-	counter = 0;
-	// Load the blocks of the file to the memory in pages of the current process. 
-	while (index < 768 && counter <= 2) do
-		if ([index] != -1) then
-			if ([PTBR + 2*counter] != -1) then
-				load ([PTBR + 2*counter], [index]);
-				index = index + 1;
-				counter = counter + 1;
-				continue;
-			endif;
-			counter = counter + 1;
-			continue;
-		endif;
-		index = index + 1;
-	endwhile;
 
 //Close all files opened by the current process
 	index = 0;
