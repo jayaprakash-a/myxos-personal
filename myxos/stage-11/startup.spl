@@ -85,13 +85,13 @@ while(counter < READY_LIST + 1024) do
 	counter = counter + 32;
 endwhile; 
 
-counter = 1280;
+counter = 0;
 
 
-//Memory free list initialisation 
+//Pages 0 to 24 in the memory are reserved for operating system. The pages 25 to 28 are allocated for the INIT process by the OS Startup Code. These pages must be marked as used in the memory free list and the remaining pages must be marked as unused. Used pages are indicated with 1 and unused pages are indicated with 0 in the memory free list. 
 
-while(counter < 1306) do
-	[counter] = 1;
+while(counter < 29) do
+	[1280 + counter] = 1;
 	counter = counter + 1;
 endwhile; 
 counter = 1309;

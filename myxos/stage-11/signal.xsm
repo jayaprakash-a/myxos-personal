@@ -41,7 +41,7 @@ OUT R0
 MOV R0, 5
 MOV R1, BP
 ADD R0, R1
-MOV R1, "even2.xsm"
+MOV R1, "even.xsm"
 PUSH R1
 PUSH R0
 MOV R1, 9
