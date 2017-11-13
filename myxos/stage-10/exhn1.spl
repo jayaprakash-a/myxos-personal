@@ -1,0 +1,123 @@
+alias Cause S1;
+alias VPagenum S2;
+alias Ip_addr S3;
+Cause = EFR % 10;		// Gets value of cause field (size 1 char)
+VPagenum = (EFR / 10) % 100;    // Gets value of BadVAddr 
+Ip_addr = (EFR/1000);		//Gets value of IP at the point of exception
+
+
+if (Cause  == 1) then
+	print ("Illegal Instruction");
+	inline "JMP 11776";
+endif;
+
+if (Cause  == 2) then
+	print ("Illegal Memory Access");
+	inline "JMP 11776";
+endif;
+
+if (Cause  == 3) then
+	print ("Arithmetic Exceptions");
+	inline "JMP 11776";
+endif;
+
+if (Cause  == 4) then
+	print ("Illegal Operands");
+	inline "JMP 11776";
+endif;
+
+if (Cause == 0) then 
+	alias disk_block S12;
+	disk_block = [PTBR + 2 * VPagenum] ;
+	if (disk_block == -1) then 
+		inline "JMP 11776";
+	endif;
+
+	alias counter S4;
+	counter = 1280;
+	alias free_page S5;
+	free_page = -1;
+	while(counter < 1344) do 
+		if ([counter] == 0) then
+			free_page = counter - 1280;
+			[counter] = 1;
+			break; 
+		endif;	
+		counter = counter + 1;
+	endwhile;
+	if (free_page == -1) then 
+		alias currentPID S6;
+		currentPID = (PTBR - 1024)/8;
+		alias counter S7;
+		alias counter_2 S8;
+		counter = 0;
+		counter_2 = 0;
+		alias victim_page S9;
+		victim_page = -1;
+		alias free_block S10;
+		free_block = 6*512 + 448;
+		print("in");
+		while(1) do 
+			counter_2 = 0;
+			while(counter_2 < 3) do
+				if([1024 + 8* ((counter+currentPID) % 32) + 2*counter_2] != -1) then
+					if ([1024 +  8* ((counter+currentPID) % 32) + 2*counter_2  + 1] == "11") then
+						[1024 + 8* ((counter+currentPID) % 32 ) + 2*counter_2+ 1] = "01";
+						counter_2 = counter_2+1;		
+						continue;
+					endif;
+					if ([1024 + 8* ((counter+currentPID) % 32) + 2*counter_2 + 1] == "01" ) then
+						victim_page = [1024 +  8* ((counter+currentPID) % 32) + 2*counter_2];
+						while (free_block < 3584) do
+							if ([free_block] == 0) then
+								store (victim_page , (free_block-3072));
+								[free_block] = 1;
+								break;
+							endif;
+							free_block = free_block + 1;
+						endwhile;
+						if (free_block > 3583) then
+							print ("free_block not available");
+							inline "JMP 11776";
+						endif;
+						
+						[1024 + 2* ((counter+currentPID) % 32) + 2*counter_2] = (free_block - 3072);
+						[1024 + 2* ((counter+currentPID) % 32) + 2*counter_2 +  1] = "10";
+						free_page = victim_page;
+						break;
+					endif;
+				endif;
+				counter_2= counter_2 + 1;
+			endwhile;
+			currentPID = currentPID +1;
+			if (currentPID > 31 ) then
+				currentPID = currentPID % 32;
+			endif;
+			if (free_page != -1) then 
+				break;
+			endif;
+		endwhile;
+		print("out");
+	endif;
+	if (disk_block > 20) then
+		print("if");
+		print(free_page);
+		print(disk_block);
+		load (free_page, disk_block);
+		if (disk_block > 447) then
+			[disk_block + 6*512] = [disk_block + 6*512] - 1;
+		endif;
+		print("endif");
+	endif;
+	[PTBR + 2*VPagenum] = free_page;
+	[PTBR + 2*VPagenum + 1] = "11";
+	SP = SP +1;
+	alias physicalSP S15;
+	physicalSP = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
+	[physicalSP] = Ip_addr;
+	ireturn;
+	
+endif;
+
+halt;
+

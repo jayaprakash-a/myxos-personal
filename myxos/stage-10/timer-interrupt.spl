@@ -64,5 +64,7 @@ newphysicalSP = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
 
 [ newPCB + 1] = 2;
 
-
+print("timer");
+print(newPID );
+print(currentPID);
 ireturn;

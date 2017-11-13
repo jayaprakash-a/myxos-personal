@@ -1,0 +1,141 @@
+alias Cause S0;
+Cause = (EFR % 10);
+
+alias VPageNum S1;
+VPageNum = ((EFR/10)%100);
+print (VPageNum);
+
+alias Ip_addr S2;
+Ip_addr = (EFR/1000);
+
+if (Cause == 1) then
+	print ("Illegal Instc");
+	inline "JMP 11776";
+endif;
+
+if (Cause == 2) then
+	print ("Illegal Add_acc");
+	inline "JMP 11776";
+endif;
+
+if (Cause == 3) then
+	print ("Arthimatic error");
+	inline "JMP 11776";
+endif;
+
+if (Cause == 4) then
+	print ("Illegal Operand");
+	inline "JMP 11776";
+endif;
+
+if (Cause == 0) then
+	print ("Page Fault");
+	if ([PTBR+(2*VPageNum)] == -1) then
+		print ("NO PAGE");
+		inline "JMP 11776";
+	endif;
+	
+	alias disk_block S3;
+	disk_block = [PTBR+(2*VPageNum)];
+	print (disk_block);
+	alias free_page S4;
+	free_page = 1280;
+	while (free_page < 1344) do
+		if ([free_page] == 0) then
+			[free_page] = 1;
+			break;
+		endif;
+		free_page = free_page + 1;
+	endwhile;
+	free_page = free_page - 1280;
+	print (free_page);
+	if (free_page > 63) then
+		free_page = 0;
+		print ("NO FREE PAGE");
+		print ("PRA");
+		alias total_proc S5;
+		total_proc = 0;
+		alias pid S7;
+		pid = (PTBR-1024)/8;
+		alias counter S6;
+		counter = 0;
+	
+		alias victim_page S8;
+		victim_page = 0;
+	
+		alias free_block S9;
+		free_block = 3520;
+		
+		while (total_proc < 32) do
+			counter = 0;
+			
+			while (counter < 3) do
+				if ([1024 + (8*pid) + (2*counter)] != -1 ) then
+					//if ([1024 + (8*pid) + (2*counter) + 1] == "10") then
+					//	[1024 + (8*pid) + (2*counter) + 1] = "00";
+					//endif;
+					if ([1024 + (8*pid) + (2*counter) + 1] == "11") then
+						[1024 + (8*pid) + (2*counter) + 1] = "01";
+						counter = counter+1;		
+						continue;
+					endif;
+					if ([1024 + (8*pid) + (2*counter) + 1] == "01" ) then
+						victim_page = [1024 + (8*pid) + (2*counter)];
+						while (free_block < 3584) do
+							if ([free_block] == 0) then
+								store (victim_page , (free_block-3072));
+								[free_block] = 1;
+								break;
+							endif;
+							free_block = free_block + 1;
+						endwhile;
+						if (free_block > 3583) then
+							print ("NO FREE BLOCK");
+							inline "JMP 11776";
+						endif;
+						[1024 + (8*pid) + (2*counter)] = (free_block - 3072);
+						[1024 + (8*pid) + (2*counter) + 1] = "10";
+						free_page = victim_page;
+						break;
+					endif;
+
+				endif;
+				counter = counter + 1;
+			endwhile;
+			pid = pid + 1;
+			if (pid > 31) then
+				pid = pid % 32;
+			endif;
+			if (free_page != 0) then
+				break;
+			endif;
+		endwhile;
+		print ("END PRA");
+	endif;
+
+	print (disk_block);
+	if (disk_block >= 21) then
+		load (free_page, disk_block);
+		print ("loaded");
+		if (disk_block > 447) then
+			[disk_block + 3072] = [disk_block + 3072] - 1;
+		endif;
+		print ("DONE");
+	endif;
+	print ([PTBR+(2*VPageNum)]);
+	[PTBR+(2*VPageNum)] = free_page;
+	[PTBR+(2*VPageNum) + 1] = "11";
+	print (SP);
+	SP = SP + 1;
+	alias physicalSP S10;
+	physicalSP = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
+	print(Ip_addr);
+	print(physicalSP);
+	[physicalSP] = Ip_addr;
+	print ("END PG FLT");
+	ireturn;
+endif;
+
+halt;
+
+	

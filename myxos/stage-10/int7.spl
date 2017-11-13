@@ -32,6 +32,7 @@ if (sysCallNo == 10) then
 		ready_process = ready_process + 32;
 	endwhile;
 	if (ready_process >= 1024 ) then
+		print("exithalt");
 		halt;
 	endif;
 	

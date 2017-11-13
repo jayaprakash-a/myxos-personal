@@ -1,22 +1,23 @@
-load --os ./../stage-11/os_startup.xsm
-load --init ./../stage-11/wait.xsm
-load --exec ./../stage-11/even.xsm
-load --int=1 ./../stage-11/int1.xsm
-load --int=2 ./../stage-11/int2.xsm
-load --int=3 ./../stage-11/int3.xsm
-load --int=4 ./../stage-11/int4.xsm
-load --int=5 ./../stage-11/int5.xsm
-load --int=6 ./../stage-11/int6.xsm
-load --int=7 ./../stage-11/int7.xsm
-load --int=timer ./../stage-11/timer.xsm
+load --os ./../stage-10/os_startup.xsm
+load --init ./../stage-10/inf.xsm
+load --exec ./../stage-10/inf.xsm
+load --int=1 ./../stage-10/int1.xsm
+load --int=2 ./../stage-10/int2.xsm
+load --int=3 ./../stage-10/int3.xsm
+load --int=4 ./../stage-10/int4.xsm
+load --int=5 ./../stage-10/int5.xsm
+load --int=6 ./../stage-10/int6.xsm
+load --int=7 ./../stage-10/int7.xsm
+load --int=timer ./../stage-10/timer.xsm
+load --exhandler ./../stage-10/exhandler.xsm
 
 
-
-./spl --os ./../stage-11/startup.spl
-./spl --int=5 ./../stage-11/int5.spl
-./spl --int=6 ./../stage-11/int6.spl
-./spl --int=7 ./../stage-11/int7.spl
-
+./spl --os ./../stage-10/startup.spl
+./spl --exhandler ./../stage-10/exhandler.spl
+./spl --int=5 ./../stage-10/int5.spl
+./spl --int=6 ./../stage-10/int6.spl
+./spl --int=7 ./../stage-10/int7.spl
+./spl --int=timer ./../stage-10/timer-interrupt.spl
 
 ./apl ./../stage-9/fork-test.apl
 ./apl ./../stage-9/menu.apl

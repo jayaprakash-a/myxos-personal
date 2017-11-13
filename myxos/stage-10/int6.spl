@@ -34,7 +34,7 @@ if (sys_call_no == 9) then
 	endif;
 
 
-	alias counter S4;
+	alias counter S10;
 	counter = 0;
 	alias counter_index S5;
 
@@ -51,7 +51,7 @@ if (sys_call_no == 9) then
 		counter = counter + 2;
 	endwhile;
 
-	load (1, basicblock);
+	load (1, basic_block);
 	counter = 512;
 	counter_index = 0;
 	while (counter < 768) do
@@ -62,7 +62,7 @@ if (sys_call_no == 9) then
 		if ([counter] != -1) then
 			[index + 1] = "00";
 			[index] = [counter];			
-			counter_index = counter_index + 1
+			counter_index = counter_index + 1;
 		endif;		
 		counter = counter + 1;
 	endwhile;

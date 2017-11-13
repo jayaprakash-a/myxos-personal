@@ -1,0 +1,155 @@
+print ("Entered fork");
+
+
+alias physicalSP S0;
+physicalSP = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
+
+alias sysCallNo S1;
+sysCallNo = [physicalSP - 1];
+
+if (sysCallNo == 8) then
+	alias fpcb S2;
+	fpcb = 0;
+
+//____________________________Checking for a Free PCB_________________________
+
+	while (fpcb < 32) do
+		if ([READY_LIST + 32*fpcb + 1] == 0) then
+			break;
+		endif;
+		fpcb = fpcb + 1;
+	endwhile;
+	
+	if (fpcb > 31) then
+		[physicalSP - 2] = -1;
+		ireturn;
+	endif;
+
+	alias npid S10;
+	npid = fpcb;	
+	[READY_LIST + 32*npid ] = npid; 	//setting pid value for child process
+
+
+	
+	alias count S4;
+	count = 0;
+//___________________________________Calculating no of valid pages in current process_____________________
+
+
+//_______________________________Calculating free pages in memory________________________
+	alias free_pages S5;
+	free_pages = 0;
+	count = 1280;
+	while (count < 1344) do
+		if ([count] == 0) then
+			free_pages =  1;
+			break;
+		endif;
+		count = count + 1;
+	endwhile;
+	
+	if (free_pages != 1) then
+		[physicalSP - 2] = -1;
+		ireturn;
+	endif;
+
+	[count] = 1;
+
+	alias flag S6;
+	flag = 0;
+
+
+//___________________________________Mapping free_pages in memory to data pages of child process_______________	
+
+	[1024 + 8*npid + 6] = count-1280;
+
+
+//______________________________________Copying data from parent to child________________________
+	alias counter_2 S11;
+	counter_2 = 0;
+	count = 3;
+	while(counter_2 < 512) do
+		[([1024 + 8*npid + 2*count])*512 + counter_2] = [([PTBR + 2*count])*512 + counter_2];
+		counter_2 = counter_2 + 1;
+	endwhile;
+	
+
+//__________________________________Updating Auxilary information of child process___________________________
+	[1024 + 8*npid + 7] = "01";
+	
+	count = 0;
+	while (count < 3) do
+		[1024 + 8*npid + 2 * count ] = [PTBR + 2 * count ];
+		[1024 + 8*npid + 2 * count  + 1] = [PTBR + 2 * count + 1];
+		
+		if ([PTBR + 2 * count + 1] == "01" || [PTBR + 2 * count + 1] == "11" ) then
+			[([PTBR + 2 * count]) + 1280] = [([PTBR + 2 * count]) + 1280] + 1;
+		endif;
+
+		if ([PTBR + 2*count + 1] == "00") then
+			if ([PTBR + 2 * count] >= 448) then
+				[([PTBR + 2 * count]) + 3072] = [([PTBR + 2 * count]) + 3072] + 1;
+			endif;
+		endif;
+		count = count + 1;
+	endwhile;
+
+	store (6, 20);
+	
+	[READY_LIST + 32*npid + 5] = (1024 + 8*npid);	//setting value of PTBR
+	[READY_LIST + 32*npid + 4] = [physicalSP];		//setting value of IP
+	[READY_LIST + 32*npid + 3] = SP - 1;			//setting value of SP
+	[READY_LIST + 32*npid + 2] = BP;				//setting value of BP
+	[READY_LIST + 32*npid + 6] = 4;					//setting value of PTLR
+	
+	[READY_LIST + 32*npid + 7] = R0;
+	[READY_LIST + 32*npid + 8] = R1;
+	[READY_LIST + 32*npid + 9] = R2;
+	[READY_LIST + 32*npid + 10] = R3;
+	[READY_LIST + 32*npid + 11] = R4;
+	[READY_LIST + 32*npid + 12] = R5;
+	[READY_LIST + 32*npid + 13] = R6;
+	[READY_LIST + 32*npid + 14] = R7;
+
+	count = 0;
+
+	alias pid S7;
+	pid = (PTBR-1024)/8;
+	alias fEntry S8;
+
+//______________________Copying process file table from parent to child_____________________
+
+	while (count < 8) do
+		if ([READY_LIST + 32*pid + 15 + 2*count] != -1) then
+			fEntry = [READY_LIST + 32*pid + 15 + 2*count];
+			if ([FILE_TABLE + 2*fEntry] == -1) then
+				[physicalSP - 2] =-1;
+				ireturn;
+			endif;
+			[FILE_TABLE + 2*fEntry + 1] = [FILE_TABLE + 2*fEntry + 1] + 1;
+		endif;
+		[READY_LIST + 32*npid + 15 + 2*count] = [READY_LIST + 32*pid + 15 + 2*count];
+		[READY_LIST + 32*npid + 15 + 2*count + 1] = [READY_LIST + 32*pid + 15 + 2*count + 1];
+		count = count + 1;
+	endwhile;
+
+	[READY_LIST + 32*npid + 1] = 1;
+	[READY_LIST + 32*npid + 31] = pid;
+	[physicalSP - 2] = npid;
+	
+	alias newphysicalSP S9;
+	newphysicalSP = ([(1024 + 8*npid) + 2 * ((SP-1) / 512)] * 512) + ((SP-1) % 512);
+	[newphysicalSP - 1] = -2;
+	print ("End of fork");
+
+	ireturn;
+
+endif;
+
+ireturn;
+	
+	
+	
+	
+
+

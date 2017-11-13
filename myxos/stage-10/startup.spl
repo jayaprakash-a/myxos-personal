@@ -3,6 +3,8 @@
 // Process System Calls
 
 
+print("enter os ");
+
 load(7,1);//loading exhandler
 load(8,2);//loading exhandler
 
@@ -99,7 +101,7 @@ while(count < 1344) do
 endwhile;
 
 
-counter = READY_LIST + 32;
+count = READY_LIST + 32;
 
 //Initialize all PCBs with STATE field 0. This will be necessary to search for a free PCB in memory. A free PCB in XOS is indicated by STATE 0 (terminated or free) in its PCB. 
 while(count < READY_LIST + 1024) do
@@ -117,5 +119,5 @@ while (index < 3584) do
 endwhile;
 store (6, 20);
 
-
-ireturn
+print("end os");
+ireturn;

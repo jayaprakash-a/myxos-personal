@@ -1,0 +1,116 @@
+load (7, 1);			//exception handler
+load (8, 2);
+
+print ("BEGIN OS");
+
+[READY_LIST + 0] = 0;	// Sets entry for PID = 0
+
+//load (25, 21);			
+//load (26, 22);
+//load(27, 23);
+
+PTBR = 1024;			//page table base register starting value is 1024
+PTLR = 4;
+[PTBR + 0] = 21;		//Mapping b/w logiacl pages and physical pages
+[PTBR + 1] = "00";		//auxilary information about current logical page
+[PTBR + 2] = 22;
+[PTBR + 3] = "00";
+[PTBR + 4] = 23;
+[PTBR + 5] = "00";
+[PTBR + 6] = 25;
+[PTBR + 7] = "01";
+
+// intialising INIT process PER-PROCESS OPEN FILE TABLE entries
+alias pid S2;
+pid = (PTBR - 1024)/8;
+
+alias count S0;
+count = 15;
+while (count < 31) do
+	[READY_LIST + 32*pid + count] = -1;
+	count = count + 1;
+endwhile;
+
+[READY_LIST + 32*pid + 31] = 0;
+[READY_LIST + 1] = 2;	//Sets entry for state as running(2):terminated(0):ready(1)
+SP = 3* 512;			//adress of stack in logical adressing
+[28 * 512] = 0;			//ip value is set to 0
+
+
+load (5, 19);			//loading FAT block in disc
+load (6, 20);			//load dfs list
+
+//initialising SYSTEM WIDE OPEN FILE TABLE entires
+
+alias counter S1;
+counter = 0;	
+while (counter < 128) do
+	[FILE_TABLE + counter + 0] = -1;
+	[FILE_TABLE + counter + 1] = 0;
+	counter = counter + 2;
+endwhile;
+
+load ( 9, 3);
+load (10, 4);	//timer interrupt
+
+load (11, 5);			
+load (12, 6);	//interrupt 1
+
+load (13, 7);    
+load (14, 8);	//interrupt 2
+
+load (15, 9);
+load (16,10);	//interrupt 3
+
+load (17,11);
+load (18,12);	//interrupt 4
+
+load (19,13);
+load (20,14);	//interrupt 5
+
+load (21,15);	
+load (22,16);	//interrupt 6
+
+load (23,17);
+load (24,18);	//interrupt 7
+
+
+
+//initialising memory free list
+
+alias mfl S3;
+mfl = 1280;
+
+while (mfl < 1344) do
+	if (mfl < 1306) then
+		[mfl] = 1;
+		mfl = mfl+1;
+		continue;
+	endif;
+	[mfl] = 0;
+	mfl = mfl + 1;
+endwhile;
+
+
+
+//initialising PCB'S STATE to '0'
+
+alias np S4;
+np = 1;
+
+while (np < 32) do
+	[READY_LIST + 32*np + 1] = 0;
+	np = np + 1;
+endwhile;
+
+//clearing swap area of disk free list
+alias dfl S5;
+dfl = 3072 + 448;
+
+while (dfl < 3584) do
+	[dfl] = 0;
+	dfl = dfl + 1;
+endwhile;
+store (6, 20);
+print ("END OS");
+ireturn;

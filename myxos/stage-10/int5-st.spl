@@ -1,0 +1,188 @@
+//print ("Entered fork");
+
+
+alias physicalSP S0;
+physicalSP = ([PTBR + 2 * (SP / 512)] * 512) + (SP % 512);
+
+alias sysCallNo S1;
+sysCallNo = [physicalSP - 1];
+
+if (sysCallNo == 8) then
+
+//======================================================================================================================================================================================================
+
+alias fpcb S2;
+fpcb = 0;
+while (fpcb < 32) do
+	if ([READY_LIST + 32*fpcb + 1] ==0) then
+		break;
+	endif;
+	fpcb = fpcb + 1;
+endwhile;
+
+if (fpcb > 31) then
+	[physicalSP - 2] = -1;
+	ireturn;
+endif;
+
+
+[READY_LIST + 32*fpcb] = fpcb;
+
+alias free_page S3;
+free_page = 1280;
+while (free_page < 1344) do
+	if ([free_page] == 0) then
+		break;
+	endif;
+	free_page = free_page + 1;
+endwhile;
+free_page = free_page - 1280;
+
+alias counter S6;
+counter = 0;
+
+alias pid S7;
+pid = (PTBR-1024)/8;
+if (free_page > 63) then
+	//print ("PRA");
+	free_page = 0;
+	//print ("NO FREE PAGE");
+	//print ("PRA");
+	alias total_proc S5;
+	total_proc = 0;
+	
+	
+	
+	alias victim_page S8;
+	victim_page = 0;
+	
+	alias free_block S9;
+	free_block = 3520;
+		
+	while (total_proc < 32) do
+		counter = 0;
+		
+		while (counter < 3) do
+			if ([1024 + (8*pid) + (2*counter)] != -1 ) then
+					//if ([1024 + (8*pid) + (2*counter) + 1] == "10") then
+					//	[1024 + (8*pid) + (2*counter) + 1] = "00";
+					//endif;
+				if ([1024 + (8*pid) + (2*counter) + 1] == "11") then
+					[1024 + (8*pid) + (2*counter) + 1] = "01";
+					counter = counter+1;		
+					continue;
+				endif;
+				if ([1024 + (8*pid) + (2*counter) + 1] == "01" ) then
+					victim_page = [1024 + (8*pid) + (2*counter)];
+					while (free_block < 3584) do
+						if ([free_block] == 0) then
+							store (victim_page , (free_block-3072));
+							[free_block] = 1;
+							break;
+						endif;
+						free_block = free_block + 1;
+					endwhile;
+					if (free_block > 3583) then
+						//print ("NO FREE BLOCK");
+						inline "JMP 11776";
+					endif;
+					[1024 + (8*pid) + (2*counter)] = (free_block - 3072);
+					[1024 + (8*pid) + (2*counter) + 1] = "10";
+					free_page = victim_page;
+					break;
+				endif;
+			endif;
+			counter = counter + 1;
+		endwhile;
+		pid = pid + 1;
+		if (pid > 31) then
+			pid = pid%32;
+		endif;
+		if (free_page != 0) then
+			break;
+		endif;
+	endwhile;
+	//print ("END PRA");
+
+endif;
+
+
+[1024 + 8*fpcb + 6] = free_page;
+[1024 + 8*fpcb + 7] = "01";
+
+counter = 0;
+while (counter < 512) do
+	[([1024 + 8*fpcb + 6]*512)+counter] = [([PTBR+6]*512) + counter];
+	counter = counter + 1;
+endwhile;
+alias nptbr S11;
+nptbr = 1024 + 8*fpcb;
+counter = 0;
+
+while (counter < 6) do
+	[nptbr + counter] = [PTBR + counter];
+	[nptbr + counter + 1] = [PTBR + counter + 1];
+	
+	if ([PTBR + counter + 1] == "01" || [PTBR + counter + 1] == "11") then
+		[1280 + [nptbr + counter]] = [1280 + [nptbr + counter]] + 1;
+	else
+		if([nptbr + counter] > 447) then
+			[3072 + [nptbr + counter]] = [3072 + [nptbr + counter]] + 1; 
+		endif;
+	endif;
+	counter = counter + 2;
+endwhile;
+
+store (6, 20);
+
+alias npcb S10;
+npcb = READY_LIST + 32*fpcb;
+
+[npcb + 1] = 1;
+[npcb + 2] = BP;
+[npcb + 3] = SP - 1;
+[npcb + 5] = nptbr;
+[npcb + 6] = 4;
+[npcb + 7] = R0;
+[npcb + 8] = R1;
+[npcb + 9] = R2;
+[npcb + 10] = R3;
+[npcb + 11] = R4;
+[npcb + 12] = R5;
+[npcb + 13] = R6;
+[npcb + 14] = R7;
+[npcb + 31] = pid;
+
+
+//________________________________
+counter = 0;
+alias fEntry S9;
+
+while (counter < 8) do
+		if ([READY_LIST + 32*pid + 15 + 2*counter] != -1) then
+			fEntry = [READY_LIST + 32*pid + 15 + 2*counter];
+			if ([FILE_TABLE + 2*fEntry] == -1) then
+				[physicalSP - 2] =-1;
+				ireturn;
+			endif;
+			[FILE_TABLE + 2*fEntry + 1] = [FILE_TABLE + 2*fEntry + 1] + 1;
+		endif;
+		[npcb + 15 + 2*counter] = [READY_LIST + 32*pid + 15 + 2*counter];
+		[npcb + 15 + 2*counter + 1] = [READY_LIST + 32*pid + 15 + 2*counter + 1];
+		counter = counter + 1;
+endwhile;
+	
+	
+[physicalSP - 2] = fpcb;
+	
+	alias newphysicalSP S9;
+	newphysicalSP = ([(1024 + 8*fpcb) + 2 * ((SP-1) / 512)] * 512) + ((SP-1) % 512);
+	[newphysicalSP - 1] = -2;
+	//print ("End of fork");
+
+	ireturn;	
+	
+endif;
+
+ireturn;
+
